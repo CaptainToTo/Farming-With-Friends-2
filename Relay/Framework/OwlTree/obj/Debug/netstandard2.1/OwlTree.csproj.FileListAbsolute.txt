@@ -1,0 +1,9 @@
+C:\Users\capti\OneDrive\Desktop\projects\Owltree\Farming\Relay\Framework\OwlTree\bin\Debug\netstandard2.1\OwlTree.deps.json
+C:\Users\capti\OneDrive\Desktop\projects\Owltree\Farming\Relay\Framework\OwlTree\bin\Debug\netstandard2.1\OwlTree.dll
+C:\Users\capti\OneDrive\Desktop\projects\Owltree\Farming\Relay\Framework\OwlTree\bin\Debug\netstandard2.1\OwlTree.pdb
+C:\Users\capti\OneDrive\Desktop\projects\Owltree\Farming\Relay\Framework\OwlTree\obj\Debug\netstandard2.1\OwlTree.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\capti\OneDrive\Desktop\projects\Owltree\Farming\Relay\Framework\OwlTree\obj\Debug\netstandard2.1\OwlTree.AssemblyInfoInputs.cache
+C:\Users\capti\OneDrive\Desktop\projects\Owltree\Farming\Relay\Framework\OwlTree\obj\Debug\netstandard2.1\OwlTree.AssemblyInfo.cs
+C:\Users\capti\OneDrive\Desktop\projects\Owltree\Farming\Relay\Framework\OwlTree\obj\Debug\netstandard2.1\OwlTree.csproj.CoreCompileInputs.cache
+C:\Users\capti\OneDrive\Desktop\projects\Owltree\Farming\Relay\Framework\OwlTree\obj\Debug\netstandard2.1\OwlTree.dll
+C:\Users\capti\OneDrive\Desktop\projects\Owltree\Farming\Relay\Framework\OwlTree\obj\Debug\netstandard2.1\OwlTree.pdb

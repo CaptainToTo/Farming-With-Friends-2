@@ -1,0 +1,1 @@
+warning CS8785: Generator 'OwlTreeGenerator' failed to generate source. It will not contribute to the output and compilation errors may occur as a result. Exception was of type 'DirectoryNotFoundException' with message 'Could not find a part of the path 'C:\Program Files\Unity\Hub\Editor\2022.3.13f1\Editor\Data\DotNetSdkRoslyn\path\ProjectProxyFactory.g.cs.debug'.'

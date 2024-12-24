@@ -1,0 +1,10 @@
+C:\Users\capti\OneDrive\Desktop\projects\Owltree\Farming\Relay\Framework\OwlTree.Generator\bin\Debug\netstandard2.0\OwlTree.Generator.deps.json
+C:\Users\capti\OneDrive\Desktop\projects\Owltree\Farming\Relay\Framework\OwlTree.Generator\bin\Debug\netstandard2.0\OwlTree.Generator.dll
+C:\Users\capti\OneDrive\Desktop\projects\Owltree\Farming\Relay\Framework\OwlTree.Generator\bin\Debug\netstandard2.0\OwlTree.Generator.pdb
+C:\Users\capti\OneDrive\Desktop\projects\Owltree\Farming\Relay\Framework\OwlTree.Generator\obj\Debug\netstandard2.0\OwlTree.Generator.csproj.AssemblyReference.cache
+C:\Users\capti\OneDrive\Desktop\projects\Owltree\Farming\Relay\Framework\OwlTree.Generator\obj\Debug\netstandard2.0\OwlTree.Generator.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\capti\OneDrive\Desktop\projects\Owltree\Farming\Relay\Framework\OwlTree.Generator\obj\Debug\netstandard2.0\OwlTree.Generator.AssemblyInfoInputs.cache
+C:\Users\capti\OneDrive\Desktop\projects\Owltree\Farming\Relay\Framework\OwlTree.Generator\obj\Debug\netstandard2.0\OwlTree.Generator.AssemblyInfo.cs
+C:\Users\capti\OneDrive\Desktop\projects\Owltree\Farming\Relay\Framework\OwlTree.Generator\obj\Debug\netstandard2.0\OwlTree.Generator.csproj.CoreCompileInputs.cache
+C:\Users\capti\OneDrive\Desktop\projects\Owltree\Farming\Relay\Framework\OwlTree.Generator\obj\Debug\netstandard2.0\OwlTree.Generator.dll
+C:\Users\capti\OneDrive\Desktop\projects\Owltree\Farming\Relay\Framework\OwlTree.Generator\obj\Debug\netstandard2.0\OwlTree.Generator.pdb

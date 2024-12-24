@@ -1,0 +1,142 @@
+{
+  "format": 1,
+  "restore": {
+    "C:\\Users\\capti\\OneDrive\\Desktop\\projects\\Owltree\\Farming\\Relay\\Project\\Relay.csproj": {}
+  },
+  "projects": {
+    "C:\\Users\\capti\\OneDrive\\Desktop\\projects\\Owltree\\Farming\\Relay\\Framework\\OwlTree\\OwlTree.csproj": {
+      "version": "1.0.0",
+      "restore": {
+        "projectUniqueName": "C:\\Users\\capti\\OneDrive\\Desktop\\projects\\Owltree\\Farming\\Relay\\Framework\\OwlTree\\OwlTree.csproj",
+        "projectName": "OwlTree",
+        "projectPath": "C:\\Users\\capti\\OneDrive\\Desktop\\projects\\Owltree\\Farming\\Relay\\Framework\\OwlTree\\OwlTree.csproj",
+        "packagesPath": "C:\\Users\\capti\\.nuget\\packages\\",
+        "outputPath": "C:\\Users\\capti\\OneDrive\\Desktop\\projects\\Owltree\\Farming\\Relay\\Framework\\OwlTree\\obj\\",
+        "projectStyle": "PackageReference",
+        "fallbackFolders": [
+          "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
+        ],
+        "configFilePaths": [
+          "C:\\Users\\capti\\AppData\\Roaming\\NuGet\\NuGet.Config",
+          "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.FallbackLocation.config",
+          "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.Offline.config"
+        ],
+        "originalTargetFrameworks": [
+          "netstandard2.1"
+        ],
+        "sources": {
+          "C:\\Program Files (x86)\\Microsoft SDKs\\NuGetPackages\\": {},
+          "https://api.nuget.org/v3/index.json": {}
+        },
+        "frameworks": {
+          "netstandard2.1": {
+            "targetAlias": "netstandard2.1",
+            "projectReferences": {}
+          }
+        },
+        "warningProperties": {
+          "warnAsError": [
+            "NU1605"
+          ]
+        },
+        "restoreAuditProperties": {
+          "enableAudit": "true",
+          "auditLevel": "low",
+          "auditMode": "all"
+        },
+        "SdkAnalysisLevel": "9.0.100"
+      },
+      "frameworks": {
+        "netstandard2.1": {
+          "targetAlias": "netstandard2.1",
+          "imports": [
+            "net461",
+            "net462",
+            "net47",
+            "net471",
+            "net472",
+            "net48",
+            "net481"
+          ],
+          "assetTargetFallback": true,
+          "warn": true,
+          "frameworkReferences": {
+            "NETStandard.Library": {
+              "privateAssets": "all"
+            }
+          },
+          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\9.0.100\\RuntimeIdentifierGraph.json"
+        }
+      }
+    },
+    "C:\\Users\\capti\\OneDrive\\Desktop\\projects\\Owltree\\Farming\\Relay\\Project\\Relay.csproj": {
+      "version": "1.0.0",
+      "restore": {
+        "projectUniqueName": "C:\\Users\\capti\\OneDrive\\Desktop\\projects\\Owltree\\Farming\\Relay\\Project\\Relay.csproj",
+        "projectName": "Relay",
+        "projectPath": "C:\\Users\\capti\\OneDrive\\Desktop\\projects\\Owltree\\Farming\\Relay\\Project\\Relay.csproj",
+        "packagesPath": "C:\\Users\\capti\\.nuget\\packages\\",
+        "outputPath": "C:\\Users\\capti\\OneDrive\\Desktop\\projects\\Owltree\\Farming\\Relay\\Project\\obj\\",
+        "projectStyle": "PackageReference",
+        "fallbackFolders": [
+          "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
+        ],
+        "configFilePaths": [
+          "C:\\Users\\capti\\AppData\\Roaming\\NuGet\\NuGet.Config",
+          "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.FallbackLocation.config",
+          "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.Offline.config"
+        ],
+        "originalTargetFrameworks": [
+          "net9.0"
+        ],
+        "sources": {
+          "C:\\Program Files (x86)\\Microsoft SDKs\\NuGetPackages\\": {},
+          "https://api.nuget.org/v3/index.json": {}
+        },
+        "frameworks": {
+          "net9.0": {
+            "targetAlias": "net9.0",
+            "projectReferences": {
+              "C:\\Users\\capti\\OneDrive\\Desktop\\projects\\Owltree\\Farming\\Relay\\Framework\\OwlTree\\OwlTree.csproj": {
+                "projectPath": "C:\\Users\\capti\\OneDrive\\Desktop\\projects\\Owltree\\Farming\\Relay\\Framework\\OwlTree\\OwlTree.csproj"
+              }
+            }
+          }
+        },
+        "warningProperties": {
+          "warnAsError": [
+            "NU1605"
+          ]
+        },
+        "restoreAuditProperties": {
+          "enableAudit": "true",
+          "auditLevel": "low",
+          "auditMode": "all"
+        },
+        "SdkAnalysisLevel": "9.0.100"
+      },
+      "frameworks": {
+        "net9.0": {
+          "targetAlias": "net9.0",
+          "imports": [
+            "net461",
+            "net462",
+            "net47",
+            "net471",
+            "net472",
+            "net48",
+            "net481"
+          ],
+          "assetTargetFallback": true,
+          "warn": true,
+          "frameworkReferences": {
+            "Microsoft.NETCore.App": {
+              "privateAssets": "all"
+            }
+          },
+          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\9.0.100/PortableRuntimeIdentifierGraph.json"
+        }
+      }
+    }
+  }
+}
