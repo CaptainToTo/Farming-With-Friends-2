@@ -11,7 +11,7 @@ Farming/[Ll]ogs/
 Farming/[Uu]ser[Ss]ettings/
 
 bin
-ExportedObj
+obj
 *.log
 
 # MemoryCaptures can get excessive in size.
@@ -29,7 +29,7 @@ ExportedObj
 
 # Visual Studio cache directory
 .vs/
-Farming/.vscode/
+.vscode/
 
 # Gradle cache directory
 .gradle/
