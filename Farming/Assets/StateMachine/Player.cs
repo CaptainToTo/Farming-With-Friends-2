@@ -13,12 +13,20 @@ public class Player : MonoBehaviour
         public Player self;
     }
 
+    private NetworkStateMachine _netcode;
     private StateMachine _machine;
+
+    public void SetNetCode(NetworkStateMachine netcode)
+    {
+        _netcode = netcode;
+        _netcode.Initialize(_machine, new State[]{Idle, Move, Grounded, Airborne});
+    }
 
     public readonly PlayerIdle Idle = new PlayerIdle();
     public readonly PlayerMove Move = new PlayerMove();
     public readonly PlayerGrounded Grounded = new PlayerGrounded();
     public readonly PlayerAirborne Airborne = new PlayerAirborne();
+    public readonly PlayerJump Jump = new PlayerJump();
 
     public Renderer Rend {
         get {
