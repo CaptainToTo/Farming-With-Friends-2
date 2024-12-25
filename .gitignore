@@ -2,13 +2,13 @@
 #
 # Get latest from https://github.com/github/gitignore/blob/main/Unity.gitignore
 #
-Farming/[Ll]ibrary/
-Farming/[Tt]emp/
-Farming/[Oo]bj/
-Farming/[Bb]uild/
-Farming/[Bb]uilds/
-Farming/[Ll]ogs/
-Farming/[Uu]ser[Ss]ettings/
+[Ll]ibrary/
+[Tt]emp/
+[Oo]bj/
+[Bb]uild/
+[Bb]uilds/
+[Ll]ogs/
+[Uu]ser[Ss]ettings/
 
 bin
 obj
