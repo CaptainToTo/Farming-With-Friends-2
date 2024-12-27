@@ -77,6 +77,13 @@ namespace OwlTree
             /// </summary>
             public bool migratable = false;
             /// <summary>
+            /// Whether or not to automatically shutdown a relay connection if it becomes empty after
+            /// the host disconnects. If false, then the relay must also allow host migration. This is 
+            /// controlled with the <c>migratable</c> argument, and will be set to true for you.
+            /// <b>Default = true</b>
+            /// </summary>
+            public bool shutdownWhenEmpty = true;
+            /// <summary>
             /// Provide a server a list of IP addresses that will be the only IPs allowed to connect as clients.
             /// If left as null, then any IP address will be allowed to connect.
             /// <b>Default = null</b>
@@ -229,7 +236,7 @@ namespace OwlTree
                     IsReady = true;
                     break;
                 case Role.Relay:
-                    _buffer = new RelayBuffer(bufferArgs, args.maxClients, args.connectionRequestTimeout, args.hostAddr, args.migratable, args.whitelist);
+                    _buffer = new RelayBuffer(bufferArgs, args.maxClients, args.connectionRequestTimeout, args.hostAddr, args.migratable, args.shutdownWhenEmpty, args.whitelist);
                     IsReady = true;
                     break;
                 case Role.Client:
@@ -560,9 +567,9 @@ namespace OwlTree
                         break;
                     case ConnectionEventType.OnHostMigration:
                         Authority = result.id;
-                        if (NetRole == Role.Host)
+                        if (NetRole == Role.Host && Authority != LocalId)
                             NetRole = Role.Client;
-                        if (result.id == LocalId)
+                        if (NetRole != Role.Relay && result.id == LocalId)
                             NetRole = Role.Host;
                         if (_logger.includes.clientEvents)
                             _logger.Write("Host migrated, new authority is: " + result.id.ToString());

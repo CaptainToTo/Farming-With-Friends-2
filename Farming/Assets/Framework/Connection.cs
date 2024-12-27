@@ -19,6 +19,8 @@ public class UnityConnection : MonoBehaviour
 
     public Connection Connection { get; private set; } = null;
 
+    public UnityEvent<UnityConnection> OnAwake;
+
     public UnityEvent<ClientId> OnReady;
     public UnityEvent<ClientId> OnClientConnected;
     public UnityEvent<ClientId> OnClientDisconnected;
@@ -34,7 +36,7 @@ public class UnityConnection : MonoBehaviour
             role = Connection.Role.Client,
             appId = "FarmingWithFriends_OwlTreeExample",
             printer = (str) => Debug.Log(str),
-            verbosity = OwlTree.Logger.Includes().ClientEvents().Exceptions()
+            verbosity = OwlTree.Logger.Includes().ClientEvents().Exceptions().AllRpcProtocols().AllTypeIds()
         });
 
         Connection.OnReady += (id) => OnReady.Invoke(id);
@@ -46,11 +48,18 @@ public class UnityConnection : MonoBehaviour
         Connection.OnObjectDespawn += (id) => OnObjectDespawn.Invoke(id);
 
         _instances.Add(this);
+
+        OnAwake?.Invoke(this);
     }
 
     void OnDestroy()
     {
         Connection.Disconnect();
         _instances.Remove(this);
+    }
+
+    void FixedUpdate()
+    {
+        Connection.ExecuteQueue();
     }
 }

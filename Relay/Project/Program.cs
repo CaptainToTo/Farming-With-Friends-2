@@ -9,18 +9,12 @@ Console.WriteLine("relay log id: " + logId.ToString());
 var relay = new Connection(new Connection.Args{
     role = Connection.Role.Relay,
     appId = "FarmingWithFriends_OwlTreeExample",
+    migratable = true,
+    shutdownWhenEmpty = false,
     maxClients = 10,
     printer = (str) => File.AppendAllText(logFile, str),
     verbosity = Logger.Includes().All()
 });
-
-relay.OnClientDisconnected += (id) => {
-    if (id == relay.Authority)
-    {
-        Console.WriteLine("Host disconnected, shutting down relay");
-        relay.Disconnect();
-    }
-};
 
 while (relay.IsActive)
 {

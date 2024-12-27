@@ -18,6 +18,17 @@ client.OnReady += (id) => {
     Console.WriteLine("assigned client id: " + id.ToString());
 };
 
+client.OnClientConnected += (id) => {
+    Console.WriteLine($"client {id} connected");
+};
+
+client.OnHostMigration += (id) => {
+    if (client.IsHost)
+        Console.WriteLine("you are now the host");
+    else
+        Console.WriteLine($"client {id} assigned as new host");
+};
+
 client.OnLocalDisconnect += (id) => {
     Console.WriteLine("disconnected");
 };
