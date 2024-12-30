@@ -22,12 +22,10 @@ public class ConnectionCallbacks : MonoBehaviour
         if (connection.Connection.IsAuthority)
         {
             connection.Spawn(playerManagerPrefab);
-            Debug.Log("set role text to host");
             roleText.text = "host";
         }
         else
         {
-            Debug.Log("set role text to client");
             roleText.text = "client";
         }
     }

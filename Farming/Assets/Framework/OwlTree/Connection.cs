@@ -597,7 +597,7 @@ namespace OwlTree
                     catch (Exception e)
                     {
                         if (_logger.includes.exceptions)
-                            _logger.Write($"Failed to run {(message.rpcId == RpcId.NETWORK_OBJECT_SPAWN ? "spawn" : "despawn")} instruction. Exception thrown:\n   {e}");
+                            _logger.Write($"FAILED to run {(message.rpcId == RpcId.NETWORK_OBJECT_SPAWN ? "spawn" : "despawn")} instruction. Exception thrown:\n   {e}");
                     }
                 }
                 else if (message.rpcId == RpcId.PING_REQUEST)
@@ -614,8 +614,24 @@ namespace OwlTree
                     catch (Exception e)
                     {
                         if (_logger.includes.exceptions)
-                            _logger.Write($"Failed to run RPC {(Protocols?.GetRpcName(message.rpcId) ?? "Unknown")} {message.rpcId} on network object: {message.target}. Exception thrown:\n   {e}");
+                            _logger.Write($"FAILED to run RPC {(Protocols?.GetRpcName(message.rpcId) ?? "Unknown")} {message.rpcId} on network object: {message.target}. Exception thrown:\n   {e}");
                     }
+                }
+            }
+
+            for (int i = 0; i < _idSearches.Count; i++)
+            {
+                var search = _idSearches[i];
+                try {
+                    if (search.SearchForObject(this))
+                    {
+                        _idSearches.RemoveAt(i);
+                        i--;
+                    }
+                }
+                catch (Exception e) {
+                    if (_logger.includes.exceptions)
+                        _logger.Write($"FAILED to find object with id {search.Id()}, threw exception:\n{e}");
                 }
             }
         }
@@ -676,7 +692,7 @@ namespace OwlTree
                     catch (Exception e)
                     {
                         if (_logger.includes.exceptions)
-                            _logger.Write($"Failed to relay spawn instruction from {message.caller}. Thrown exception:\n{e}");
+                            _logger.Write($"FAILED to relay spawn instruction from {message.caller}. Thrown exception:\n{e}");
                     }
                 }
                 else if (message.rpcId == RpcId.NETWORK_OBJECT_DESPAWN)
@@ -691,7 +707,7 @@ namespace OwlTree
                     catch (Exception e)
                     {
                         if (_logger.includes.exceptions)
-                            _logger.Write($"Failed to relay despawn instruction from {message.caller}. Thrown exception:\n{e}");
+                            _logger.Write($"FAILED to relay despawn instruction from {message.caller}. Thrown exception:\n{e}");
                     }
                 }
                 else
@@ -711,7 +727,7 @@ namespace OwlTree
                     catch (Exception e)
                     {
                         if (_logger.includes.exceptions)
-                            _logger.Write($"Failed to relay RPC from {message.caller}, sending to {message.callee}. Thrown exception:\n{e}");
+                            _logger.Write($"FAILED to relay RPC from {message.caller}, sending to {message.callee}. Thrown exception:\n{e}");
                     }
                 }
             }
@@ -733,7 +749,7 @@ namespace OwlTree
                 catch (Exception e)
                 {
                     if (_logger.includes.exceptions)
-                        _logger.Write($"Failed to encode spawn instruction. Thrown exception:\n{e}");
+                        _logger.Write($"FAILED to encode spawn instruction. Thrown exception:\n{e}");
                     return;
                 }
             }
@@ -749,7 +765,7 @@ namespace OwlTree
                 catch (Exception e)
                 {
                     if (_logger.includes.exceptions)
-                        _logger.Write($"Failed to encode despawn instruction. Thrown exception:\n{e}");
+                        _logger.Write($"FAILED to encode despawn instruction. Thrown exception:\n{e}");
                     return;
                 }
             }
@@ -774,7 +790,7 @@ namespace OwlTree
                         var str = new StringBuilder();
                         for (int i = 0; i < args.Length; i++)
                             str.Append($"{i + 1}: {args[i]}\n");
-                        _logger.Write($"Failed to encode RPC {rpcId}, with arguments:\n{str}\nThrown exception:\n{e}");
+                        _logger.Write($"FAILED to encode RPC {rpcId}, with arguments:\n{str}\nThrown exception:\n{e}");
                     }
                     return;
                 }
@@ -995,6 +1011,18 @@ namespace OwlTree
             return true;
         }
 
+        public bool TryGetObject(Type k, object key, out object val)
+        {
+            var map = _objectMaps.FirstOrDefault(m => m.Key.k == k).Value;
+            if (map == null || map.Contains(key))
+            {
+                val = default;
+                return false;
+            }
+            val = map[key];
+            return true;
+        }
+
         public V GetObject<K, V>(K key)
         {
             var pair = new Pair(typeof(K), typeof(V));
@@ -1043,6 +1071,72 @@ namespace OwlTree
             if (!_objectMaps.ContainsKey(pair))
                 return;
             _objectMaps.Remove(pair);
+        }
+
+        private interface ISearch
+        {
+            public object Id();
+            public bool SearchForObject(Connection connection);
+        }
+
+        private struct NetSearch : ISearch
+        {
+            public NetworkId id;
+            public Action<NetworkObject> callback;
+
+            public NetSearch(NetworkId id, Action<NetworkObject> callback)
+            {
+                this.id = id;
+                this.callback = callback;
+            }
+
+            public object Id() => id;
+
+            public bool SearchForObject(Connection connection)
+            {
+                if (connection.TryGetObject(id, out var obj))
+                {
+                    callback.Invoke(obj);
+                    return true;
+                }
+                return false;
+            }
+        }
+
+        private struct IdSearch<K, V> : ISearch
+        {
+            public K id;
+            public Action<V> callback;
+
+            public IdSearch(K id, Action<V> callback)
+            {
+                this.id = id;
+                this.callback = callback;
+            }
+
+            public object Id() => id;
+
+            public bool SearchForObject(Connection connection)
+            {
+                if (connection.TryGetObject(id, out V obj))
+                {
+                    callback.Invoke(obj);
+                    return true;
+                }
+                return false;
+            }
+        }
+
+        private List<ISearch> _idSearches = new();
+
+        public void WaitForObject(NetworkId id, Action<NetworkObject> callback)
+        {
+            _idSearches.Add(new NetSearch(id, callback));
+        }
+
+        public void WaitForObject<K, V>(K id, Action<V> callback)
+        {
+            _idSearches.Add(new IdSearch<K, V>(id, callback));
         }
     }
 }

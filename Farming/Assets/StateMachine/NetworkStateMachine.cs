@@ -128,7 +128,7 @@ namespace OwlTree.StateMachine
         /// <summary>
         /// Rpc to set a new authority of this state machine.
         /// </summary>
-        [Rpc(RpcCaller.Server)]
+        [Rpc(RpcCaller.Server, InvokeOnCaller = true)]
         public virtual void RPC_SetAuthority(ClientId authority)
         {
             Authority = authority;

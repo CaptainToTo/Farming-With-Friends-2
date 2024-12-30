@@ -99,7 +99,6 @@ public class UnityConnection : MonoBehaviour
         {
             foreach (var s in PrefabSpawner.Instances)
             {
-                Debug.Log("searching for spawner");
                 if (s.Connection == Connection)
                 {
                     _spawner = s;

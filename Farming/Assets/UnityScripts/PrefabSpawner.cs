@@ -98,10 +98,10 @@ namespace OwlTree.Unity
             netObj.Id = NextGameObjectId();
             netObj.Prefab = id;
             netObj.Connection = _connection;
-            netObj.InvokeOnSpawn();
             Connection.AddObjectToMap(netObj.Id, netObj);
-            
             SendSpawn(id, netObj.Id);
+            netObj.InvokeOnSpawn();
+            
 
             return netObj;
         }
@@ -123,8 +123,8 @@ namespace OwlTree.Unity
             netObj.Id = assignedId;
             netObj.Prefab = id;
             netObj.Connection = _connection;
-            netObj.InvokeOnSpawn();
             Connection.AddObjectToMap(netObj.Id, netObj);
+            netObj.InvokeOnSpawn();
         }
 
         public void SendNetworkObjects(ClientId callee)
@@ -157,8 +157,10 @@ namespace OwlTree.Unity
             
             netObj.Id = assignedId;
             netObj.Connection = _connection;
-            netObj.OnSpawn.Invoke(netObj);
             Connection.AddObjectToMap(netObj.Id, netObj);
+
+            netObj.OnSpawn.Invoke(netObj);
+            netObj.InvokeOnSpawn();
         }
 
         public void Despawn(NetworkGameObject target)

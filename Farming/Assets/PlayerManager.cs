@@ -17,15 +17,16 @@ public class PlayerManager : NetworkBehaviour
 
     public override void OnSpawn()
     {
+        transform.position = Connection.transform.position;
         if (Connection.Connection.IsAuthority)
         {
             _netcode = Connection.Connection.Spawn<PlayerManagerNetcode>();
             _netcode.manager = this;
             Connection.OnClientConnected.AddListener(SpawnPlayer);
             Connection.OnClientDisconnected.AddListener(DespawnPlayer);
-            SpawnPlayer(Connection.Connection.LocalId);
+            foreach (var player in Connection.Connection.Clients)
+                SpawnPlayer(player);
         }
-        transform.position = Connection.transform.position;
     }
 
     public override void OnDespawn()
@@ -47,6 +48,8 @@ public class PlayerManager : NetworkBehaviour
         {
             var playerObj = Connection.Spawn(_playerPrefab);
             var stateMachine = Connection.Connection.Spawn<NetworkStateMachine>();
+            playerObj.GetComponent<Player>().SetNetcode(stateMachine, player);
+            CachePlayer(player, playerObj.GetComponent<Player>());
             _netcode.AttachPlayerNetcode(player, playerObj.Id, stateMachine.Id);
         }
     }
@@ -71,6 +74,7 @@ public class PlayerManager : NetworkBehaviour
 
 public class PlayerManagerNetcode : NetworkObject
 {
+
     public PlayerManager manager;
 
     public override void OnSpawn()
@@ -83,31 +87,36 @@ public class PlayerManagerNetcode : NetworkObject
     public virtual void RequestManagerId([RpcCaller] ClientId caller = default)
     {
         AttachToManager(caller, manager.NetObject.Id);
+    }
+
+    [Rpc(RpcCaller.Client)]
+    public virtual void RequestPlayers([RpcCaller] ClientId caller = default)
+    {
         foreach (var pair in manager.Players)
-        {
             AttachPlayerNetcode(pair.Key, pair.Value.NetObject.Id, pair.Value.netcode.Id);
-        }
     }
 
     [Rpc(RpcCaller.Server)]
     public virtual void AttachToManager([RpcCallee] ClientId callee, GameObjectId id)
     {
-        if (Connection.TryGetObject(id, out NetworkGameObject obj))
-        {
+        Connection.WaitForObject<GameObjectId, NetworkGameObject>(id, (obj) => {
             manager = obj.GetComponent<PlayerManager>();
             manager.SetNetcode(this);
-        }
+            RequestPlayers();
+        });
     }
 
-    [Rpc(RpcCaller.Server, InvokeOnCaller = true)]
+    [Rpc(RpcCaller.Server)]
     public virtual void AttachPlayerNetcode(ClientId player, GameObjectId id, NetworkId netcodeId)
     {
-        if (manager.HasPlayer(player))
-            return;
-        var netcode = (NetworkStateMachine)Connection.GetNetworkObject(netcodeId);
-        Connection.TryGetObject(id, out NetworkGameObject obj);
-        var playerObj = obj.GetComponent<Player>();
-        playerObj.SetNetcode(netcode);
-        manager.CachePlayer(player, playerObj);
+        Connection.WaitForObject(netcodeId, (netcodeObj) => {
+            if (manager?.HasPlayer(player) ?? true)
+                return;
+            var netcode = (NetworkStateMachine)netcodeObj;
+            Connection.TryGetObject(id, out NetworkGameObject obj);
+            var playerObj = obj.GetComponent<Player>();
+            playerObj.SetNetcode(netcode, player);
+            manager.CachePlayer(player, playerObj);
+        });
     }
 }

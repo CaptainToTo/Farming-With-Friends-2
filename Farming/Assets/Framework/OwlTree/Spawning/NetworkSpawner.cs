@@ -82,9 +82,12 @@ namespace OwlTree
             newObj.SetConnectionInternal(_connection);
             newObj.i_OnRpcCall = _connection.AddRpc;
             _netObjects.Add(newObj.Id, newObj);
+
+            _connection.AddRpc(new RpcId(RpcId.NETWORK_OBJECT_SPAWN), new object[]{typeof(T), newObj.Id});
+
             newObj.OnSpawn();
             OnObjectSpawn?.Invoke(newObj);
-            _connection.AddRpc(new RpcId(RpcId.NETWORK_OBJECT_SPAWN), new object[]{typeof(T), newObj.Id});
+            
             return newObj;
         }
 
