@@ -284,9 +284,10 @@ namespace OwlTree
         /// <summary>
         /// True if there are messages that are waiting to be sent.
         /// </summary>
-        public bool HasOutgoing { get { return _outgoing.Count > 0 || HasClientEvent; } }
+        public bool HasOutgoing { get { return _outgoing.Count > 0 || HasClientEvent || HasRelayMessages; } }
 
         protected bool HasClientEvent = false;
+        protected bool HasRelayMessages = false;
         
         /// <summary>
         /// Get the next message in the read queue.

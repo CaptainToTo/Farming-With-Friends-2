@@ -13,7 +13,7 @@ namespace OwlTree
     /// </summary>
     public class RelayBuffer : NetworkBuffer
     {
-        public RelayBuffer(Args args, int maxClients, long requestTimeout, string hostAddr, bool migratable, IPAddress[] whitelist) : base(args)
+        public RelayBuffer(Args args, int maxClients, long requestTimeout, string hostAddr, bool migratable, bool shutdownWhenEmpty, IPAddress[] whitelist) : base(args)
         {
             IPEndPoint tpcEndPoint = new IPEndPoint(IPAddress.Any, TcpPort);
             _tcpRelay = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
@@ -28,9 +28,11 @@ namespace OwlTree
 
             _whitelist = whitelist;
 
+            ShutdownWhenEmpty = shutdownWhenEmpty;
+
             if (hostAddr != null)
                 _hostAddr = IPAddress.Parse(hostAddr);
-            Migratable = migratable;
+            Migratable = ShutdownWhenEmpty ? migratable : true;
 
             _clientData = new ClientDataList(BufferSize, DateTimeOffset.UtcNow.Millisecond);
 
@@ -73,6 +75,11 @@ namespace OwlTree
         /// If not, then the relay server will shutdown when the host disconnects.
         /// </summary>
         public bool Migratable { get; private set; }
+
+        /// <summary>
+        /// Whether or not to shutdown the server if it is empty.
+        /// </summary>
+        public bool ShutdownWhenEmpty { get; private set; }
 
         public override void Read()
         {
@@ -386,6 +393,7 @@ namespace OwlTree
             var span = packet.GetSpan(bytes.Length);
             for (int i = 0; i < span.Length; i++)
                 span[i] = bytes[i];
+            HasRelayMessages = true;
         }
 
         private void HandlePingRequest(PingRequest request)
@@ -506,6 +514,7 @@ namespace OwlTree
             }
 
             HasClientEvent = false;
+            HasRelayMessages = false;
         }
 
         public override void Disconnect()
@@ -551,10 +560,24 @@ namespace OwlTree
 
             if (client.id == Authority)
             {
-                if (Migratable && _clientData.Count > 0)
-                    MigrateHost(FindNewHost());
-                else
+                if (!Migratable)
+                {
                     Disconnect();
+                }
+                else if (ShutdownWhenEmpty && _clientData.Count <= 0)
+                {
+                    Disconnect();
+                }
+                else if (!ShutdownWhenEmpty && _clientData.Count <= 0)
+                {
+                    Authority = ClientId.None;
+                    _hostAddr = null;
+                    OnHostMigration?.Invoke(Authority);
+                }
+                else
+                {
+                    MigrateHost(FindNewHost());
+                }
             }
         }
 
@@ -572,15 +595,19 @@ namespace OwlTree
         /// </summary>
         public override void MigrateHost(ClientId newHost)
         {
-            if (_clientData.Find(newHost) == ClientData.None)
+            var data = _clientData.Find(newHost);
+            if (data == ClientData.None)
                 return;
             Authority = newHost;
+            _hostAddr = data.Address;
             foreach (var client in _clientData)
             {
                 var span = client.tcpPacket.GetSpan(ClientMessageLength);
                 HostMigrationEncode(span, newHost);
             }
             HasClientEvent = true;
+
+            OnHostMigration?.Invoke(newHost);
         }
     }
 }

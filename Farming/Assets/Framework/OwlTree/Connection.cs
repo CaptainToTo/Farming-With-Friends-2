@@ -1,7 +1,9 @@
 
 using System;
+using System.Collections;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Linq;
 using System.Net;
 using System.Text;
 using System.Threading;
@@ -76,6 +78,13 @@ namespace OwlTree
             /// <b>Default = false</b>
             /// </summary>
             public bool migratable = false;
+            /// <summary>
+            /// Whether or not to automatically shutdown a relay connection if it becomes empty after
+            /// the host disconnects. If false, then the relay must also allow host migration. This is 
+            /// controlled with the <c>migratable</c> argument, and will be set to true for you.
+            /// <b>Default = true</b>
+            /// </summary>
+            public bool shutdownWhenEmpty = true;
             /// <summary>
             /// Provide a server a list of IP addresses that will be the only IPs allowed to connect as clients.
             /// If left as null, then any IP address will be allowed to connect.
@@ -229,7 +238,7 @@ namespace OwlTree
                     IsReady = true;
                     break;
                 case Role.Relay:
-                    _buffer = new RelayBuffer(bufferArgs, args.maxClients, args.connectionRequestTimeout, args.hostAddr, args.migratable, args.whitelist);
+                    _buffer = new RelayBuffer(bufferArgs, args.maxClients, args.connectionRequestTimeout, args.hostAddr, args.migratable, args.shutdownWhenEmpty, args.whitelist);
                     IsReady = true;
                     break;
                 case Role.Client:
@@ -454,7 +463,7 @@ namespace OwlTree
         /// <summary>
         /// Returns true if the local connection is the authority of this session.
         /// </summary>
-        public bool IsAuthority { get { return !IsRelay && _buffer.LocalId == _buffer.Authority; } }
+        public bool IsAuthority { get { return !IsRelay && IsReady && _buffer.LocalId == _buffer.Authority; } }
 
         /// <summary>
         /// Returns true if the current session supports host migration.
@@ -560,9 +569,9 @@ namespace OwlTree
                         break;
                     case ConnectionEventType.OnHostMigration:
                         Authority = result.id;
-                        if (NetRole == Role.Host)
+                        if (NetRole == Role.Host && Authority != LocalId)
                             NetRole = Role.Client;
-                        if (result.id == LocalId)
+                        if (NetRole != Role.Relay && result.id == LocalId)
                             NetRole = Role.Host;
                         if (_logger.includes.clientEvents)
                             _logger.Write("Host migrated, new authority is: " + result.id.ToString());
@@ -717,14 +726,15 @@ namespace OwlTree
                 try
                 {
                     message.bytes = new byte[NetworkSpawner.SpawnByteLength];
-                    _spawner.SpawnEncode(message.bytes, (Type)message.args[0], (NetworkId)message.args[1]);
+                    _spawner.SpawnEncode(message.bytes, (Type)args[0], (NetworkId)args[1]);
                     if (_logger.includes.rpcCallEncodings)
-                        _logger.Write("SENDING:\n" + _spawner.SpawnEncodingSummary((Type)message.args[0], (NetworkId)message.args[1]));
+                        _logger.Write("SENDING:\n" + _spawner.SpawnEncodingSummary((Type)args[0], (NetworkId)args[1]));
                 }
                 catch (Exception e)
                 {
                     if (_logger.includes.exceptions)
                         _logger.Write($"Failed to encode spawn instruction. Thrown exception:\n{e}");
+                    return;
                 }
             }
             else if (message.rpcId == RpcId.NETWORK_OBJECT_DESPAWN)
@@ -732,21 +742,22 @@ namespace OwlTree
                 try
                 {
                     message.bytes = new byte[NetworkSpawner.DespawnByteLength];
-                    _spawner.DespawnEncode(message.bytes, (NetworkId)message.args[0]);
+                    _spawner.DespawnEncode(message.bytes, (NetworkId)args[0]);
                     if (_logger.includes.rpcCallEncodings)
-                        _logger.Write("SENDING:\n" + _spawner.DespawnEncodingSummary((NetworkId)message.args[0]));
+                        _logger.Write("SENDING:\n" + _spawner.DespawnEncodingSummary((NetworkId)args[0]));
                 }
                 catch (Exception e)
                 {
                     if (_logger.includes.exceptions)
                         _logger.Write($"Failed to encode despawn instruction. Thrown exception:\n{e}");
+                    return;
                 }
             }
             else
             {
                 try
                 {
-                    message.bytes = new byte[Protocols.GetRpcByteLength(rpcId, message.args)];
+                    message.bytes = new byte[Protocols.GetRpcByteLength(rpcId, args)];
                     Protocols.EncodeRpc(message.bytes, rpcId, LocalId, callee, target, args);
                     if (_logger.includes.rpcCalls)
                     {
@@ -765,6 +776,7 @@ namespace OwlTree
                             str.Append($"{i + 1}: {args[i]}\n");
                         _logger.Write($"Failed to encode RPC {rpcId}, with arguments:\n{str}\nThrown exception:\n{e}");
                     }
+                    return;
                 }
             }
 
@@ -927,6 +939,110 @@ namespace OwlTree
             else if (IsRelay)
                 throw new InvalidOperationException("Relay servers cannot spawn or destroy network objects.");
             _spawner.Despawn(target);
+        }
+
+        private struct Pair
+        {
+            public Type k;
+            public Type v;
+
+            public Pair(Type k, Type v)
+            {
+                this.k = k;
+                this.v = v;
+            }
+
+            public static bool operator ==(Pair a, Pair b)
+            {
+                return a.k == b.k && a.v == b.v;
+            }
+
+            public static bool operator !=(Pair a, Pair b)
+            {
+                return a.k != b.k || a.v != b.v;
+            }
+
+            public override bool Equals(object obj) => obj != null && obj.GetType() == typeof(Pair) && (Pair)obj == this;
+            public override int GetHashCode() => base.GetHashCode();
+        }
+
+        private Dictionary<Pair, IDictionary> _objectMaps = new();
+
+        public void AddObjectMap<K, V>()
+        {
+            var pair = new Pair(typeof(K), typeof(V));
+            if (!_objectMaps.ContainsKey(pair))
+                _objectMaps.Add(pair, new Dictionary<K, V>());
+        }
+
+        public void AddObjectToMap<K, V>(K key, V val)
+        {
+            var pair = new Pair(typeof(K), typeof(V));
+            if (!_objectMaps.ContainsKey(pair))
+                throw new InvalidOperationException($"No map has pairing {typeof(K)}: {typeof(V)}");
+            _objectMaps[pair][key] = val;
+        }
+
+        public bool TryGetObject<K, V>(K key, out V val)
+        {
+            var pair = new Pair(typeof(K), typeof(V));
+            if (!_objectMaps.ContainsKey(pair) || !_objectMaps[pair].Contains(key))
+            {
+                val = default;
+                return false;
+            }
+            val = (V)_objectMaps[pair][key];
+            return true;
+        }
+
+        public V GetObject<K, V>(K key)
+        {
+            var pair = new Pair(typeof(K), typeof(V));
+            if (!_objectMaps.ContainsKey(pair) || !_objectMaps[pair].Contains(key))
+                return default;
+            return (V)_objectMaps[pair][key];
+        }
+
+        public bool HasKey<K>(K key)
+        {
+            var t = typeof(K);
+            var map = _objectMaps.FirstOrDefault(m => m.Key.k == t).Value;
+            if (map == null)
+                return false;
+            return map.Contains(key);
+        }
+
+        public IEnumerable<V> GetObjects<K, V>()
+        {
+            var pair = new Pair(typeof(K), typeof(V));
+            if (!_objectMaps.ContainsKey(pair))
+                throw new ArgumentException($"No map has pairing {typeof(K)}: {typeof(V)}");
+            return _objectMaps[pair].Cast<KeyValuePair<K, V>>().Select(p => p.Value);
+        }
+
+        public void RemoveObject<K>(K key)
+        {
+            var t = typeof(K);
+            var map = _objectMaps.FirstOrDefault(m => m.Key.k == t).Value;
+            if (map == null)
+                return;
+            map.Remove(key);
+        }
+
+        public void ClearMap<K, V>()
+        {
+            var pair = new Pair(typeof(K), typeof(V));
+            if (!_objectMaps.ContainsKey(pair))
+                return;
+            _objectMaps[pair].Clear();
+        }
+
+        public void RemoveMap<K, V>()
+        {
+            var pair = new Pair(typeof(K), typeof(V));
+            if (!_objectMaps.ContainsKey(pair))
+                return;
+            _objectMaps.Remove(pair);
         }
     }
 }

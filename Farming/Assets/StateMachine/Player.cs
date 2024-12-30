@@ -2,6 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using OwlTree.StateMachine;
+using OwlTree.Unity;
 
 public class Player : MonoBehaviour
 {
@@ -13,13 +14,15 @@ public class Player : MonoBehaviour
         public Player self;
     }
 
-    private NetworkStateMachine _netcode;
+    public NetworkGameObject NetObject => GetComponent<NetworkGameObject>();
+
+    public NetworkStateMachine netcode;
     private StateMachine _machine;
 
-    public void SetNetCode(NetworkStateMachine netcode)
+    public void SetNetcode(NetworkStateMachine netcode)
     {
-        _netcode = netcode;
-        _netcode.Initialize(_machine, new State[]{Idle, Move, Grounded, Airborne});
+        this.netcode = netcode;
+        this.netcode.Initialize(_machine, new State[]{Idle, Move, Grounded, Airborne, Jump});
     }
 
     public readonly PlayerIdle Idle = new PlayerIdle();

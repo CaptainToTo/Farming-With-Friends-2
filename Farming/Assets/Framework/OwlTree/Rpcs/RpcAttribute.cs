@@ -29,7 +29,7 @@ namespace OwlTree
     public class RpcCallerAttribute : Attribute { }
 
     /// <summary>
-    /// Provides the caller a way to specify a specific client as the callee.
+    /// Provides the caller a way to specify a singular client as the callee.
     /// </summary>
     [AttributeUsage(AttributeTargets.Parameter, AllowMultiple = false)]
     public class RpcCalleeAttribute : Attribute { }

@@ -393,6 +393,7 @@ namespace OwlTree
             var span = packet.GetSpan(bytes.Length);
             for (int i = 0; i < span.Length; i++)
                 span[i] = bytes[i];
+            HasRelayMessages = true;
         }
 
         private void HandlePingRequest(PingRequest request)
@@ -513,6 +514,7 @@ namespace OwlTree
             }
 
             HasClientEvent = false;
+            HasRelayMessages = false;
         }
 
         public override void Disconnect()
