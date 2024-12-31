@@ -13,6 +13,7 @@ namespace OwlTree.StateMachine
     {
         public delegate void SingleState(State state);
         public delegate void DoubleState(State state1, State state2);
+        public delegate void DoubleStateInd(State state1, State state2, int ind);
         public delegate void StateIndex(int i, State state);
 
         private State _root;
@@ -240,14 +241,15 @@ namespace OwlTree.StateMachine
             return false;
         }
 
-        public event DoubleState OnStateSwap;
+        public event DoubleStateInd OnStateSwap;
 
         /// <summary>
         /// Swap an active state 'from' to a new state 'to'.
         /// </summary>
         public void SwapStates(State from, State to)
         {
-            if (!Contains(from))
+            int ind = IndexOf(from);
+            if (ind == -1)
                 throw new ArgumentException($"Cannot swap from state of type {from.GetType()} because this state machine does not contain that state.");
             
             if (to == null)
@@ -267,8 +269,11 @@ namespace OwlTree.StateMachine
             if (from.SubState != null)
                 from.SubState.SuperState = to;
 
-            from.SuperState = null;
-            from.SubState = null;
+            if (from != to)
+            {
+                from.SuperState = null;
+                from.SubState = null;
+            }
 
             if (from == _root)
                 _root = to;
@@ -280,7 +285,17 @@ namespace OwlTree.StateMachine
             to.SuperState?.OnSubStateSwap(from, to);
             to.SubState?.OnSuperStateSwap(from, to);
 
-            OnStateSwap?.Invoke(from, to);
+            OnStateSwap?.Invoke(from, to, ind);
+        }
+
+        /// <summary>
+        /// Swap an active state at index 'from' to a new state 'to'.
+        /// </summary>
+        public void SwapStatesAt(int ind, State to)
+        {
+            if (ind < 0 || Count <= ind)
+                throw new IndexOutOfRangeException($"{ind} is not a valid index in the active state chain.");
+            SwapStates(Get(ind), to);
         }
 
         public event StateIndex OnInsertState;

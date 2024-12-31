@@ -21,6 +21,7 @@ namespace OwlTree.StateMachine
         /// specific state machines.
         /// </summary>
         public ClientId Authority { get; private set; } = ClientId.None;
+        private ClientId _originalAuth = ClientId.None;
 
         /// <summary>
         /// True once this has been assigned a state machine through Initialize().
@@ -62,6 +63,12 @@ namespace OwlTree.StateMachine
             return Machine.Get(_typeIds.First(p => p.Value == id).Key);
         }
 
+        private bool TryFindStateOnMachine(int id, out State state)
+        {
+            state = FindStateOnMachine(id);
+            return state != null;
+        }
+
         private State GetState(int id)
         {
             if (_typeIds != null && _typeIds.ContainsValue(id))
@@ -69,6 +76,16 @@ namespace OwlTree.StateMachine
             if (_stateIds != null && _stateIds.ContainsValue(id))
                 return _stateIds.First(p => p.Value == id).Key;
             return null;
+        }
+
+        public override void OnSpawn()
+        {
+            Authority = Connection.Authority;
+            _originalAuth = Connection.Authority;
+            Connection.OnHostMigration += (id) => {
+                if (Authority == _originalAuth && Connection.IsAuthority)
+                    RPC_SetAuthority(id);
+            };
         }
 
         /// <summary>
@@ -79,7 +96,6 @@ namespace OwlTree.StateMachine
         public void Initialize(StateMachine machine, IEnumerable<Type> states)
         {
             Machine = machine;
-            Authority = Connection.Authority;
 
             int curId = 1;
             var ordered = states.OrderBy(t => t.ToString());
@@ -106,7 +122,6 @@ namespace OwlTree.StateMachine
         public void Initialize(StateMachine machine, IEnumerable<State> states)
         {
             Machine = machine;
-            Authority = Connection.Authority;
 
             int curId = 1;
             var ordered = states.OrderBy(t => t.ToString());
@@ -146,6 +161,9 @@ namespace OwlTree.StateMachine
         [Rpc(RpcCaller.Server)]
         public virtual void RPC_RemoveState(int i, [RpcCaller] ClientId caller = default)
         {
+            if (!Initialized)
+                return;
+            
             if (caller != Authority)
             {
                 if (Connection.IsAuthority)
@@ -168,6 +186,9 @@ namespace OwlTree.StateMachine
         [Rpc(RpcCaller.Any)]
         public virtual void RPC_InsertState(int i, int state, [RpcCaller] ClientId caller = default)
         {
+            if (!Initialized)
+                return;
+            
             if (caller != Authority)
             {
                 if (Connection.IsAuthority)
@@ -181,7 +202,7 @@ namespace OwlTree.StateMachine
             Machine.AddSubStateAt(i, GetState(state));
         }
 
-        private void OnStateSwap(State from, State to)
+        private void OnStateSwap(State from, State to, int ind)
         {
             if (!ContainsState(from))
                 throw new ArgumentException($"The state of type {from.GetType()} was not assigned as a valid state on initialization.");
@@ -189,12 +210,15 @@ namespace OwlTree.StateMachine
                 throw new ArgumentException($"The state of type {to.GetType()} was not assigned as a valid state on initialization.");
             
             if (Connection.LocalId == Authority)
-                RPC_SwapStates(GetId(from), GetId(to));
+                RPC_SwapStates(GetId(from), GetId(to), ind);
         }
 
         [Rpc(RpcCaller.Any)]
-        public virtual void RPC_SwapStates(int from, int to, [RpcCaller] ClientId caller = default)
+        public virtual void RPC_SwapStates(int from, int to, int ind, [RpcCaller] ClientId caller = default)
         {
+            if (!Initialized)
+                return;
+
             if (caller != Authority)
             {
                 if (Connection.IsAuthority)
@@ -207,10 +231,7 @@ namespace OwlTree.StateMachine
             if (!ContainsId(to))
                 throw new ArgumentException($"The state id {from} was not assigned on initialization.");
             
-            if (CachedStates)
-                Machine.SwapStates(GetState(from), GetState(to));
-            else
-                Machine.SwapStates(FindStateOnMachine(from), GetState(to));
+            Machine.SwapStatesAt(ind, GetState(to));
         }
     }
 }

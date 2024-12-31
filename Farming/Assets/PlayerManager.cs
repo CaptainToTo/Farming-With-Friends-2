@@ -48,6 +48,7 @@ public class PlayerManager : NetworkBehaviour
         {
             var playerObj = Connection.Spawn(_playerPrefab);
             var stateMachine = Connection.Connection.Spawn<NetworkStateMachine>();
+            stateMachine.RPC_SetAuthority(player);
             playerObj.GetComponent<Player>().SetNetcode(stateMachine, player);
             CachePlayer(player, playerObj.GetComponent<Player>());
             _netcode.AttachPlayerNetcode(player, playerObj.Id, stateMachine.Id);

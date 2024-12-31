@@ -316,6 +316,8 @@ namespace OwlTree
 
         private Logger _logger;
 
+        public void Log(string message) => _logger.Write(message);
+
         private Thread _bufferThread = null;
 
         public bool Threaded { get; private set; } = false;

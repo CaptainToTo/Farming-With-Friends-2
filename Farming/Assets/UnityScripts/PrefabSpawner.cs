@@ -99,9 +99,10 @@ namespace OwlTree.Unity
             netObj.Prefab = id;
             netObj.Connection = _connection;
             Connection.AddObjectToMap(netObj.Id, netObj);
+
             SendSpawn(id, netObj.Id);
+
             netObj.InvokeOnSpawn();
-            
 
             return netObj;
         }
@@ -158,8 +159,6 @@ namespace OwlTree.Unity
             netObj.Id = assignedId;
             netObj.Connection = _connection;
             Connection.AddObjectToMap(netObj.Id, netObj);
-
-            netObj.OnSpawn.Invoke(netObj);
             netObj.InvokeOnSpawn();
         }
 
@@ -193,7 +192,8 @@ namespace OwlTree.Unity
                 obj.OnDespawn.Invoke(obj);
                 OnObjectDespawn?.Invoke(obj);
                 obj.Connection = null;
-                GameObject.Destroy(obj.gameObject);
+                if (obj != null)
+                    GameObject.Destroy(obj.gameObject);
             }
             Connection.ClearMap<GameObjectId, NetworkGameObject>();
         }

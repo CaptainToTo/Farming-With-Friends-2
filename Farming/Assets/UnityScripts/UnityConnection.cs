@@ -9,8 +9,8 @@ namespace OwlTree.Unity
 {
 
 /// <summary>
-/// Thin wrapper around an OwlTree Connection instance that exposes the API,
-/// and hooks into Unity's runtime.
+/// Thin wrapper around an OwlTree Connection instance
+/// that hooks into Unity's runtime.
 /// </summary>
 public class UnityConnection : MonoBehaviour
 {
@@ -129,7 +129,8 @@ public class UnityConnection : MonoBehaviour
     {
         if (!Connection.IsAuthority)
             throw new InvalidOperationException("Non-authority clients cannot spawn new objects.");
-        return _spawner.Spawn(prefab);
+        var spawned = _spawner.Spawn(prefab);
+        return spawned;
     }
 
     public void Despawn(NetworkGameObject target)

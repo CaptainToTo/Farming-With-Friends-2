@@ -4,6 +4,7 @@ using UnityEngine;
 using OwlTree.StateMachine;
 using OwlTree.Unity;
 using OwlTree;
+using TMPro;
 
 public class Player : MonoBehaviour
 {
@@ -21,17 +22,15 @@ public class Player : MonoBehaviour
     private StateMachine _machine;
     public ClientId PlayerId {get; private set; }
 
+    [SerializeField] TextMeshProUGUI _idText;
+
     public bool IsLocal => netcode == null || PlayerId == netcode.Connection.LocalId;
 
     public void SetNetcode(NetworkStateMachine netcode, ClientId playerId)
     {
         this.netcode = netcode;
         PlayerId = playerId;
-        if (this.netcode.Connection.IsAuthority)
-        {
-            Debug.Log("set authority to " + playerId);
-            this.netcode.RPC_SetAuthority(PlayerId);
-        }
+        _idText.text = playerId.ToString();
         this.netcode.Initialize(_machine, new State[]{Idle, Move, Grounded, Airborne, Jump});
     }
 
@@ -88,7 +87,7 @@ public class Player : MonoBehaviour
 
     void Update()
     {
-        if (!IsLocal)
+        if (!IsLocal || !ClientSwitch.IsSelected(PlayerId))
             return;
 
         float x = Input.GetKey(KeyCode.A) ? -1f :
@@ -110,37 +109,13 @@ public class Player : MonoBehaviour
     {
         if (!IsLocal)
             return;
-        
-        float x = Input.GetKey(KeyCode.A) ? -1f :
-            Input.GetKey(KeyCode.D) ? 1f : 0;
-        float y = Input.GetKey(KeyCode.W) ? 1f :
-            Input.GetKey(KeyCode.S) ? -1f: 0;
 
         var input = new InputData{
             deltaTime = Time.fixedDeltaTime,
-            moveDir = new Vector2(x, y),
+            moveDir =Vector2.zero,
             self = this
         };
 
         _machine.PhysicsUpdate(input);
-    }
-
-    void LateUpdate()
-    {
-        if (!IsLocal)
-            return;
-
-        float x = Input.GetKey(KeyCode.A) ? -1f :
-            Input.GetKey(KeyCode.D) ? 1f : 0;
-        float y = Input.GetKey(KeyCode.W) ? 1f :
-            Input.GetKey(KeyCode.S) ? -1f: 0;
-
-        var input = new InputData{
-            deltaTime = Time.deltaTime,
-            moveDir = new Vector2(x, y),
-            self = this
-        };
-
-        _machine.RenderUpdate(input);
     }
 }
