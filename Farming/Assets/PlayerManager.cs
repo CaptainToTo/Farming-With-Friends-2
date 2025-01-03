@@ -50,6 +50,7 @@ public class PlayerManager : NetworkBehaviour
             var stateMachine = Connection.Connection.Spawn<NetworkStateMachine>();
             stateMachine.RPC_SetAuthority(player);
             playerObj.GetComponent<Player>().SetNetcode(stateMachine, player);
+            playerObj.GetComponent<NetworkTransform>().SetAuthority(player);
             CachePlayer(player, playerObj.GetComponent<Player>());
             _netcode.AttachPlayerNetcode(player, playerObj.Id, stateMachine.Id);
         }

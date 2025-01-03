@@ -61,7 +61,7 @@ public class UnityConnection : MonoBehaviour
             threaded = _args.threaded,
             threadUpdateDelta = _args.threadUpdateDelta,
             printer = (str) => Debug.Log(str),
-            verbosity = Logger.Includes().ClientEvents().Exceptions().AllRpcProtocols().AllTypeIds().TcpPostTransform().TcpPreTransform()
+            verbosity = Logger.Includes().ClientEvents().Exceptions().AllRpcProtocols().AllTypeIds()
         };
 
         Connection = new Connection(args);
@@ -70,7 +70,7 @@ public class UnityConnection : MonoBehaviour
         Connection.OnClientDisconnected += (id) => OnClientDisconnected.Invoke(id);
         Connection.OnLocalDisconnect += (id) => {
             OnLocalDisconnect.Invoke(id);
-            _spawner.DespawnAll();
+            _spawner?.DespawnAll();
             Destroy(gameObject);
         };
         Connection.OnHostMigration += (id) => OnHostMigration.Invoke(id);

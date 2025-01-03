@@ -1,14 +1,20 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-using OwlTree;
-using System.Linq;
 
 namespace OwlTree.Unity
 {
     public class NetworkTransform : NetworkBehaviour
     {
         internal TransformNetcode netcode = null;
+
+        public ClientId Authority => netcode.Authority;
+
+        public void SetAuthority(ClientId authority)
+        {
+            if (Connection.Connection.IsAuthority)
+                netcode.SetAuthority(authority);
+        }
 
         public Vector3 offset;
 
@@ -23,7 +29,7 @@ namespace OwlTree.Unity
 
         void FixedUpdate()
         {
-            if (netcode == null || !Connection.Connection.IsAuthority)
+            if (netcode == null || Connection.Connection.LocalId != netcode.Authority)
                 return;
 
             var pos = new NetworkVec3(transform.localPosition.x + offset.x, transform.localPosition.y + offset.y, transform.localPosition.z + offset.z);
@@ -37,10 +43,19 @@ namespace OwlTree.Unity
     {
         internal NetworkTransform transform = null;
 
+        public ClientId Authority { get; private set; }
+
         public override void OnSpawn()
         {
+            Authority = Connection.Authority;
             if (!Connection.IsAuthority)
                 RequestTransform();
+        }
+
+        [Rpc(RpcCaller.Server, InvokeOnCaller = true)]
+        public virtual void SetAuthority(ClientId authority)
+        {
+            Authority = authority;
         }
 
         [Rpc(RpcCaller.Client)]
@@ -58,9 +73,12 @@ namespace OwlTree.Unity
             });
         }
 
-        [Rpc(RpcCaller.Server)]
-        public virtual void SendTransform(NetworkVec3 pos, NetworkVec4 rot, NetworkVec3 scale)
+        [Rpc(RpcCaller.Any, RpcProtocol = Protocol.Udp)]
+        public virtual void SendTransform(NetworkVec3 pos, NetworkVec4 rot, NetworkVec3 scale, [RpcCaller] ClientId caller = default)
         {
+            if (caller != Authority)
+                return;
+
             if (transform == null)
                 return;
 

@@ -235,47 +235,49 @@ namespace OwlTree
                 }
                 else if (socket == _udpClient)
                 {
-                    Array.Clear(ReadBuffer, 0, ReadBuffer.Length);
-                    ReadPacket.Clear();
+                    do {
+                        Array.Clear(ReadBuffer, 0, ReadBuffer.Length);
+                        ReadPacket.Clear();
 
-                    EndPoint source = new IPEndPoint(IPAddress.Any, 0);
-                    int dataLen = -1;
-                    try
-                    {
-                        dataLen = socket.ReceiveFrom(ReadBuffer, ref source);
-                        ReadPacket.FromBytes(ReadBuffer, 0);
-                    }
-                    catch { }
-
-                    if (dataLen <= 0)
-                    {
-                        continue;
-                    }
-
-                    if (Logger.includes.udpPreTransform)
-                    {
-                        var packetStr = new StringBuilder($"RECEIVED: Pre-Transform UDP packet from server by {LocalId}:\n");
-                        PacketToString(ReadPacket, packetStr);
-                        Logger.Write(packetStr.ToString());
-                    }
-
-                    ApplyReadSteps(ReadPacket);
-
-                    if (Logger.includes.udpPostTransform)
-                    {
-                        var packetStr = new StringBuilder($"RECEIVED: Post-Transform UDP packet from server by {LocalId}:\n");
-                        PacketToString(ReadPacket, packetStr);
-                        Logger.Write(packetStr.ToString());
-                    }
-
-                    ReadPacket.StartMessageRead();
-                    while (ReadPacket.TryGetNextMessage(out var bytes))
-                    {
-                        if (TryDecode(ClientId.None, bytes, out var message))
+                        EndPoint source = new IPEndPoint(IPAddress.Any, 0);
+                        int dataLen = -1;
+                        try
                         {
-                            _incoming.Enqueue(message);
+                            dataLen = socket.ReceiveFrom(ReadBuffer, ref source);
+                            ReadPacket.FromBytes(ReadBuffer, 0);
                         }
-                    }
+                        catch { }
+
+                        if (dataLen <= 0)
+                        {
+                            break;
+                        }
+
+                        if (Logger.includes.udpPreTransform)
+                        {
+                            var packetStr = new StringBuilder($"RECEIVED: Pre-Transform UDP packet from server by {LocalId}:\n");
+                            PacketToString(ReadPacket, packetStr);
+                            Logger.Write(packetStr.ToString());
+                        }
+
+                        ApplyReadSteps(ReadPacket);
+
+                        if (Logger.includes.udpPostTransform)
+                        {
+                            var packetStr = new StringBuilder($"RECEIVED: Post-Transform UDP packet from server by {LocalId}:\n");
+                            PacketToString(ReadPacket, packetStr);
+                            Logger.Write(packetStr.ToString());
+                        }
+
+                        ReadPacket.StartMessageRead();
+                        while (ReadPacket.TryGetNextMessage(out var bytes))
+                        {
+                            if (TryDecode(ClientId.None, bytes, out var message))
+                            {
+                                _incoming.Enqueue(message);
+                            }
+                        }
+                    } while (_udpClient.Available > 0);
                 }
             }
         }
