@@ -75,7 +75,7 @@ public class PlayerAirborne : State
     {
         var start = ((Player.InputData)data).self.transform.position + (Vector3.down * 0.45f);
         var dist = 0.2f;
-        Debug.DrawLine(start, start + (Vector3.down * dist), Color.red, 0.5f);
+        ((Player.InputData)data).self.transform.eulerAngles += Vector3.up * 0.5f;
         if (Physics.Raycast(start, Vector3.down, dist, LayerMask.GetMask("Ground")))
             SwapTo(((Player.InputData)data).self.Grounded);
     }

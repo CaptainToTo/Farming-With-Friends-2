@@ -38,8 +38,10 @@ namespace OwlTree
         {
             if (_outgoingRecords.Count < 3)
                 return 0;
-            int sum = _outgoingRecords.Sum(r => r.bytes);
-            return sum / ((_outgoingRecords.Last().time - _outgoingRecords.First().time) / 1000f);
+            int sum = 0;
+            for (int i = 0; i < _outgoingRecords.Count; i++)
+                sum += _outgoingRecords[i].bytes;
+            return sum / ((DateTimeOffset.Now.ToUnixTimeMilliseconds() - _outgoingRecords[0].time) / 1000f);
         }
 
         public float OutgoingKbPerSecond()
@@ -51,8 +53,10 @@ namespace OwlTree
         {
             if (_incomingRecords.Count < 3)
                 return 0;
-            int sum = _incomingRecords.Sum(r => r.bytes);
-            return sum / ((_incomingRecords.Last().time - _incomingRecords.First().time) / 1000f);
+            int sum = 0;
+            for (int i = 0; i < _incomingRecords.Count; i++)
+                sum += _incomingRecords[i].bytes;
+            return sum / ((DateTimeOffset.Now.ToUnixTimeMilliseconds() - _incomingRecords[0].time) / 1000f);
         }
 
         public float IncomingKbPerSecond()

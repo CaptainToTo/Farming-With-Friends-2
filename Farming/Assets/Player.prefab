@@ -419,3 +419,10 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   offset: {x: -5, y: 0, z: 0}
+  _interpolate: 0
+  _continuousSync: 0
+  _syncRotation: 1
+  _syncScale: 0
+  nextPos: {x: 0, y: 0, z: 0}
+  nextRot: {x: 0, y: 0, z: 0, w: 0}
+  nextScale: {x: 0, y: 0, z: 0}
