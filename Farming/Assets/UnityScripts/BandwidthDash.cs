@@ -26,8 +26,8 @@ namespace OwlTree.Unity
             if (Time.time - _lastUpdate > _updateFrequency)
             {
                 var b = _connection.Bandwidth;
-                _recvText.text = $"Recv: {b.IncomingKibPerSecond():F2} Kib/s";
-                _sendText.text = $"Send: {b.OutgoingKibPerSecond():F2} Kib/s";
+                _recvText.text = $"Recv: {b.IncomingKbPerSecond():F2} Kb/s";
+                _sendText.text = $"Send: {b.OutgoingKbPerSecond():F2} Kb/s";
                 _lastUpdate = Time.time;
             }
         }

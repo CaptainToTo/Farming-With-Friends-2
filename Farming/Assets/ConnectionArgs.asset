@@ -30,6 +30,7 @@ MonoBehaviour:
   appVersion: 1
   minAppVersion: 0
   useCompression: 1
+  measureBandwidth: 1
   threaded: 1
   threadUpdateDelta: 40
   prefabs:

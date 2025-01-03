@@ -306,8 +306,8 @@ namespace OwlTree
             {
                 Bandwidth = new Bandwidth(args.bandwidthReporter == null ? (b) => {
                     var str = $"Bandwidth report at {DateTimeOffset.Now.ToUnixTimeMilliseconds()}:\n";
-                    str += $"   Incoming: {b.IncomingKibPerSecond()} Kib/s\n";
-                    str += $"   Outgoing: {b.OutgoingKibPerSecond()} Kib/s";
+                    str += $"   Incoming: {b.IncomingKbPerSecond()} Kib/s\n";
+                    str += $"   Outgoing: {b.OutgoingKbPerSecond()} Kib/s";
                     _logger.Write(str);
                 } : args.bandwidthReporter);
 

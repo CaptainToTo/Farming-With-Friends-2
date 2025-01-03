@@ -42,7 +42,7 @@ namespace OwlTree
             return sum / ((_outgoingRecords.Last().time - _outgoingRecords.First().time) / 1000f);
         }
 
-        public float OutgoingKibPerSecond()
+        public float OutgoingKbPerSecond()
         {
             return OutgoingBytesPerSecond() / 1000f;
         }
@@ -55,7 +55,7 @@ namespace OwlTree
             return sum / ((_incomingRecords.Last().time - _incomingRecords.First().time) / 1000f);
         }
 
-        public float IncomingKibPerSecond()
+        public float IncomingKbPerSecond()
         {
             return IncomingBytesPerSecond() / 1000f;
         }
