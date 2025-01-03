@@ -39,6 +39,8 @@ public class UnityConnection : MonoBehaviour
     public UnityEvent<NetworkGameObject> OnGameObjectSpawn;
     public UnityEvent<NetworkGameObject> OnGameObjectDespawn;
 
+    [HideInInspector] public UnityEvent<Bandwidth> OnBandwidthReport;
+
     public bool IsActive => Connection.IsActive;
 
     public bool IsReady => Connection.IsReady && _spawner != null;
@@ -58,6 +60,8 @@ public class UnityConnection : MonoBehaviour
             connectionRequestTimeout = _args.connectionRequestTimeout,
             bufferSize = _args.bufferSize,
             useCompression = _args.useCompression,
+            measureBandwidth = _args.measureBandwidth,
+            bandwidthReporter = (b) => OnBandwidthReport.Invoke(b),
             threaded = _args.threaded,
             threadUpdateDelta = _args.threadUpdateDelta,
             printer = (str) => Debug.Log(str),
@@ -149,6 +153,8 @@ public class UnityConnection : MonoBehaviour
     public RpcProtocols Protocols => Connection.Protocols;
 
     public void Log(string message) => Connection.Log(message);
+
+    public Bandwidth Bandwidth => Connection.Bandwidth;
 
     public bool Threaded => Connection.Threaded;
 

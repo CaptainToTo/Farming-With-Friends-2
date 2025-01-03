@@ -63,6 +63,8 @@ public class ConnectionArgs : ScriptableObject
     /// </summary>
     public bool useCompression = true;
 
+    public bool measureBandwidth = false;
+
     /// <summary>
     /// If false, Reading and writing to sockets will need to called by your program with <c>Read()</c>
     /// and <c>Send()</c>. These operations will be done synchronously.

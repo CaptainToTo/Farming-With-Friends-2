@@ -165,6 +165,18 @@ namespace OwlTree
             /// </summary>
             public bool useCompression = true;
 
+            /// <summary>
+            /// Records how much data is being send and received. Adds a read step with a priority of 0, and a send step with a priority of 200.
+            /// <b>Default = false</b>
+            /// </summary>
+            public bool measureBandwidth = false;
+
+            /// <summary>
+            /// A callback to output bandwidth recordings.
+            /// <b>Default = printer</b>
+            /// </summary>
+            public Action<Bandwidth> bandwidthReporter = null;
+
             // threaded buffer
 
             /// <summary>
@@ -290,6 +302,26 @@ namespace OwlTree
                 });
             }
 
+            if (args.measureBandwidth)
+            {
+                Bandwidth = new Bandwidth(args.bandwidthReporter == null ? (b) => {
+                    var str = $"Bandwidth report at {DateTimeOffset.Now.ToUnixTimeMilliseconds()}:\n";
+                    str += $"   Incoming: {b.IncomingKibPerSecond()} Kib/s\n";
+                    str += $"   Outgoing: {b.OutgoingKibPerSecond()} Kib/s";
+                    _logger.Write(str);
+                } : args.bandwidthReporter);
+
+                _buffer.AddReadStep(new NetworkBuffer.Transformer{
+                    priority = 0,
+                    step = Bandwidth.RecordIncoming
+                });
+
+                _buffer.AddSendStep(new NetworkBuffer.Transformer{
+                    priority = 200,
+                    step = Bandwidth.RecordOutgoing
+                });
+            }
+
             foreach (var step in args.readSteps)
             {
                 _buffer.AddReadStep(step);
@@ -317,6 +349,8 @@ namespace OwlTree
         private Logger _logger;
 
         public void Log(string message) => _logger.Write(message);
+
+        public Bandwidth Bandwidth { get; private set; } = null;
 
         private Thread _bufferThread = null;
 
