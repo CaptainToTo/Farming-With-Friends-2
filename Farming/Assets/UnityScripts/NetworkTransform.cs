@@ -12,7 +12,7 @@ namespace OwlTree.Unity
 
         public void SetAuthority(ClientId authority)
         {
-            if (Connection.Connection.IsAuthority)
+            if (Connection.IsAuthority)
                 netcode.SetAuthority(authority);
         }
 
@@ -20,16 +20,16 @@ namespace OwlTree.Unity
 
         public override void OnSpawn()
         {
-            if (Connection.Connection.IsAuthority)
+            if (Connection.IsAuthority)
             {
-                netcode = Connection.Connection.Spawn<TransformNetcode>();
+                netcode = Connection.Spawn<TransformNetcode>();
                 netcode.transform = this;
             }
         }
 
         void FixedUpdate()
         {
-            if (netcode == null || Connection.Connection.LocalId != netcode.Authority)
+            if (netcode == null || Connection.LocalId != netcode.Authority)
                 return;
 
             var pos = new NetworkVec3(transform.localPosition.x + offset.x, transform.localPosition.y + offset.y, transform.localPosition.z + offset.z);

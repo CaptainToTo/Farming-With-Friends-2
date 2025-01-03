@@ -18,20 +18,20 @@ public class PlayerManager : NetworkBehaviour
     public override void OnSpawn()
     {
         transform.position = Connection.transform.position;
-        if (Connection.Connection.IsAuthority)
+        if (Connection.IsAuthority)
         {
-            _netcode = Connection.Connection.Spawn<PlayerManagerNetcode>();
+            _netcode = Connection.Spawn<PlayerManagerNetcode>();
             _netcode.manager = this;
             Connection.OnClientConnected.AddListener(SpawnPlayer);
-            Connection.OnClientDisconnected.AddListener(DespawnPlayer);
-            foreach (var player in Connection.Connection.Clients)
+            foreach (var player in Connection.Clients)
                 SpawnPlayer(player);
         }
+        Connection.OnClientDisconnected.AddListener(DespawnPlayer);
     }
 
     public override void OnDespawn()
     {
-        Connection.Connection.Despawn(_netcode);
+        Connection.Despawn(_netcode);
         Connection.OnClientConnected.RemoveListener(SpawnPlayer);
         Connection.OnClientDisconnected.RemoveListener(DespawnPlayer);
     }
@@ -44,10 +44,10 @@ public class PlayerManager : NetworkBehaviour
 
     private void SpawnPlayer(ClientId player)
     {
-        if (Connection.Connection.IsAuthority)
+        if (Connection.IsAuthority)
         {
             var playerObj = Connection.Spawn(_playerPrefab);
-            var stateMachine = Connection.Connection.Spawn<NetworkStateMachine>();
+            var stateMachine = Connection.Spawn<NetworkStateMachine>();
             stateMachine.RPC_SetAuthority(player);
             playerObj.GetComponent<Player>().SetNetcode(stateMachine, player);
             playerObj.GetComponent<NetworkTransform>().SetAuthority(player);
@@ -66,9 +66,9 @@ public class PlayerManager : NetworkBehaviour
 
     private void DespawnPlayer(ClientId player)
     {
-        if (Connection.Connection.IsAuthority)
+        if (Connection.IsAuthority)
         {
-            Connection.Connection.Despawn(_players[player].netcode);
+            Connection.Despawn(_players[player].netcode);
             Connection.Despawn(_players[player].GetComponent<NetworkGameObject>());
         }
     }

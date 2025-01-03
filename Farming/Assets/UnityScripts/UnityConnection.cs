@@ -125,6 +125,8 @@ public class UnityConnection : MonoBehaviour
 
     private PrefabSpawner _spawner = null;
 
+    public IEnumerable<NetworkGameObject> GameObjects => _spawner?.Objects;
+
     public NetworkGameObject Spawn(GameObject prefab)
     {
         if (!Connection.IsAuthority)
@@ -139,6 +141,92 @@ public class UnityConnection : MonoBehaviour
             throw new InvalidOperationException("Non-authority clients cannot despawn objects.");
         _spawner.Despawn(target);
     }
+
+    public NetworkGameObject GetGameObject(GameObjectId id) => _spawner.GetGameObject(id);
+
+    public bool TryGetObject(GameObjectId id, out NetworkGameObject obj) => _spawner.TryGetObject(id, out obj);
+
+    public RpcProtocols Protocols => Connection.Protocols;
+
+    public void Log(string message) => Connection.Log(message);
+
+    public bool Threaded => Connection.Threaded;
+
+    public Connection.Role NetRole => Connection.NetRole;
+
+    public bool IsServer => Connection.IsServer;
+
+    public bool IsClient => Connection.IsClient;
+
+    public bool IsHost => Connection.IsHost;
+
+    public bool IsRelay => Connection.IsRelay;
+
+    public int ClientCount => Connection.ClientCount;
+
+    public IEnumerable<ClientId> Clients => Connection.Clients;
+
+    public bool ContainsClient(ClientId id) => Connection.ContainsClient(id);
+
+    public ClientId LocalId => Connection.LocalId;
+
+    public ClientId Authority => Connection.Authority;
+
+    public bool IsAuthority => Connection.IsAuthority;
+
+    public bool Migratable => Connection.Migratable;
+
+    public void Read() => Connection.Read();
+
+    public void AwaitConnection() => Connection.AwaitConnection();
+
+    public void ExecuteQueue() => Connection.ExecuteQueue();
+
+    public void Send() => Connection.Send();
+
+    public PingRequest Ping(ClientId target) => Connection.Ping(target);
+
+    public void Disconnect() => Connection.Disconnect();
+
+    public void Disconnect(ClientId id) => Connection.Disconnect(id);
+
+    public void MigrateHost(ClientId id) => Connection.MigrateHost(id);
+
+    public IEnumerable<NetworkObject> NetworkObjects => Connection.NetworkObjects;
+
+    public bool TryGetObject(NetworkId id, out NetworkObject obj) => Connection.TryGetObject(id, out obj);
+
+    public NetworkObject GetNetworkObject(NetworkId id) => Connection.GetNetworkObject(id);
+
+    public T Spawn<T>() where T : NetworkObject, new() => Connection.Spawn<T>();
+
+    public NetworkObject Spawn(Type t) => Connection.Spawn(t);
+
+    public void Despawn(NetworkObject target) => Connection.Despawn(target);
+
+    public void AddObjectMap<K, V>() => Connection.AddObjectMap<K, V>();
+
+    public void AddObjectToMap<K, V>(K key, V val) => Connection.AddObjectToMap(key, val);
+
+    public bool TryGetObject<K, V>(K key, out V val) => Connection.TryGetObject(key, out val);
+
+    public bool TryGetObject(Type k, object key, out object val) => Connection.TryGetObject(k, key, out val);
+
+    public V GetObject<K, V>(K key) => Connection.GetObject<K, V>(key);
+
+    public bool HasKey<K>(K key) => Connection.HasKey(key);
+
+    public IEnumerable<V> GetObjects<K, V>() => Connection.GetObjects<K, V>();
+
+    public void RemoveObject<K>(K key) => Connection.RemoveObject(key);
+
+    public void ClearMap<K, V>() => Connection.ClearMap<K, V>();
+
+    public void RemoveMap<K, V>() => Connection.RemoveMap<K, V>();
+
+    public void WaitForObject(NetworkId id, Action<NetworkObject> callback) => Connection.WaitForObject(id, callback);
+
+    public void WaitForObject<K, V>(K id, Action<V> callback) => Connection.WaitForObject(id, callback);
 }
 
 }

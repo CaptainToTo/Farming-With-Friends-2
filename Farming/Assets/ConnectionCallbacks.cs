@@ -19,7 +19,7 @@ public class ConnectionCallbacks : MonoBehaviour
 
     public void OnReady(ClientId localId)
     {
-        if (connection.Connection.IsAuthority)
+        if (connection.IsAuthority)
         {
             connection.Spawn(playerManagerPrefab);
             roleText.text = "host " + localId;

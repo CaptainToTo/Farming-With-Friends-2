@@ -281,7 +281,7 @@ namespace OwlTree
                 priority = 100,
                 step = Huffman.Decode
             });
-            
+
             if (args.useCompression)
             {
                 _buffer.AddSendStep(new NetworkBuffer.Transformer{
@@ -941,7 +941,7 @@ namespace OwlTree
         /// <summary>
         /// Spawns a new instance of the given NetworkObject sub-type across all clients.
         /// </summary>
-        public object Spawn(Type t)
+        public NetworkObject Spawn(Type t)
         {
             if (IsClient)
                 throw new InvalidOperationException("Clients cannot spawn or despawn network objects");
