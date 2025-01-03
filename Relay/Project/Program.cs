@@ -12,6 +12,7 @@ var relay = new Connection(new Connection.Args{
     migratable = true,
     shutdownWhenEmpty = false,
     maxClients = 10,
+    useCompression = true,
     printer = (str) => File.AppendAllText(logFile, str),
     verbosity = Logger.Includes().All()
 });

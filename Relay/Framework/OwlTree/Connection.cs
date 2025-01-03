@@ -275,13 +275,13 @@ namespace OwlTree
                 };
             }
 
+            _buffer.AddReadStep(new NetworkBuffer.Transformer{
+                priority = 100,
+                step = Huffman.Decode
+            });
+
             if (args.useCompression)
             {
-                _buffer.AddReadStep(new NetworkBuffer.Transformer{
-                    priority = 100,
-                    step = Huffman.Decode
-                });
-
                 _buffer.AddSendStep(new NetworkBuffer.Transformer{
                     priority = 100,
                     step = Huffman.Encode

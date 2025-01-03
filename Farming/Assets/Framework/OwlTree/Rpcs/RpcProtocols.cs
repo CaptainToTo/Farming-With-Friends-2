@@ -123,8 +123,18 @@ namespace OwlTree
 
         public void EncodeRpc(Span<byte> bytes, RpcId rpcId, ClientId caller, ClientId callee, NetworkId target, object[] args)
         {
-            if (!ValidateArgs(rpcId, args))
-                throw new ArgumentException("Invalid RPC arguments given to RPC " + rpcId.ToString());
+            if (!ValidateArgs(rpcId, args, out var argInd))
+            {
+                string reason;
+                if (argInd == -2)
+                    reason = $"there is no rpc with the id {rpcId}";
+                else if (argInd == -3)
+                    reason = $"{args.Length} arguments provided instead of the correct number";
+                else
+                    reason = $"argument no. {argInd} is {args[argInd]} of type {args[argInd].GetType()}";
+                throw new ArgumentException($"Invalid RPC arguments given to RPC {rpcId}. Detected error: {reason}");
+            }
+
             var callerInd = GetRpcCallerParam(rpcId.Id);
             var calleeInd = GetRpcCalleeParam(rpcId.Id);
             RpcEncoding.EncodeRpc(bytes, rpcId, caller, callee, target, args, callerInd, calleeInd);
@@ -158,8 +168,17 @@ namespace OwlTree
         /// </summary>
         internal void InvokeRpc(ClientId caller, ClientId callee, RpcId id, NetworkObject target, object[] args)
         {
-            if (!ValidateArgs(id, args))
-                throw new ArgumentException("Provided arguments do not match the RPC function signature.");
+            if (!ValidateArgs(id, args, out var argInd))
+            {
+                string reason;
+                if (argInd == -2)
+                    reason = $"there is no rpc with the id {id}";
+                else if (argInd == -3)
+                    reason = $"{args.Length} arguments provided instead of the correct number";
+                else
+                    reason = $"argument no. {argInd} is {args[argInd]} of type {args[argInd].GetType()}";
+                throw new ArgumentException($"Provided arguments do not match the RPC function signature. Detected error: {reason}");
+            }
             
             var ind = GetRpcCallerParam(id.Id);
             if (ind != -1)
@@ -176,25 +195,38 @@ namespace OwlTree
         /// <summary>
         /// Checks if the given args match the required types for the given RPC.
         /// </summary>
-        public bool ValidateArgs(RpcId id, object[] args)
+        public bool ValidateArgs(RpcId id, object[] args, out int argInd)
         {
             var paramTypes = GetProtocol(id.Id);
             if (paramTypes == null)
+            {
+                argInd = -2;
                 return false;
+            }
             
             // if args is null, assume there are no args, in which case there may be no parameters
             if (args == null && paramTypes.Length == 0)
+            {
+                argInd = -1;
                 return true;
+            }
             // otherwise there must be the same number of args and parameters
             if (args.Length != paramTypes.Length)
+            {
+                argInd = -3;
                 return false;
+            }
             
             for (int i = 0; i < args.Length; i++)
             {
                 if (args[i].GetType() != paramTypes[i])
+                {
+                    argInd = i;
                     return false;
+                }
             }
 
+            argInd = -1;
             return true;
         }
 
@@ -228,9 +260,11 @@ namespace OwlTree
             {
                 var param = parameters[i];
                 int size = RpcEncoding.GetMaxLength(param);
-                maxSize += size;
                 if (!IsRpcCalleeParam(id.Id, i) && !IsRpcCallerParam(id.Id, i))
+                {
+                    maxSize += size;
                     encoding.Append($"[ {i + 1}:{size}b ]");
+                }
                 paramStr.Append($"   {i + 1}: {param} ").Append(GetRpcParamName(id.Id, i));
 
                 if (IsRpcCalleeParam(id.Id, i))
@@ -252,8 +286,17 @@ namespace OwlTree
         /// </summary>
         public string GetEncodingSummary(RpcId id, ClientId caller, ClientId callee, NetworkId target, object[] args)
         {
-            if (!ValidateArgs(id, args))
-                return "Invalid Args...";
+            if (!ValidateArgs(id, args, out var argInd))
+            {
+                string reason;
+                if (argInd == -2)
+                    reason = $"there is no rpc with the id {id}";
+                else if (argInd == -3)
+                    reason = $"{args.Length} arguments provided instead of the correct number";
+                else
+                    reason = $"argument no. {argInd} is {args[argInd]} of type {args[argInd].GetType()}";
+                return "Invalid arguments, " + reason;
+            }
 
             int len = RpcEncoding.GetExpectedRpcLength(args, GetRpcCallerParam(id), GetRpcCalleeParam(id));
             byte[] bytes = new byte[len];

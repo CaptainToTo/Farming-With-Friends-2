@@ -277,13 +277,13 @@ namespace OwlTree
                 };
             }
 
+            _buffer.AddReadStep(new NetworkBuffer.Transformer{
+                priority = 100,
+                step = Huffman.Decode
+            });
+            
             if (args.useCompression)
             {
-                _buffer.AddReadStep(new NetworkBuffer.Transformer{
-                    priority = 100,
-                    step = Huffman.Decode
-                });
-
                 _buffer.AddSendStep(new NetworkBuffer.Transformer{
                     priority = 100,
                     step = Huffman.Encode
@@ -616,7 +616,10 @@ namespace OwlTree
                     catch (Exception e)
                     {
                         if (_logger.includes.exceptions)
-                            _logger.Write($"FAILED to run RPC {(Protocols?.GetRpcName(message.rpcId) ?? "Unknown")} {message.rpcId} on network object: {message.target}. Exception thrown:\n   {e}");
+                        {
+                            var call = Protocols.GetEncodingSummary(message.rpcId, message.caller, message.callee, message.target, message.args);
+                            _logger.Write($"FAILED to run RPC {(Protocols?.GetRpcName(message.rpcId) ?? "Unknown")} {message.rpcId} on network object: {message.target}.\n\nEncoding Summary:\n{call}\nException thrown:\n   {e}");
+                        }
                     }
                 }
             }

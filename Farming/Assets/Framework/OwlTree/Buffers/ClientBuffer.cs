@@ -193,7 +193,7 @@ namespace OwlTree
 
                         if (Logger.includes.tcpPreTransform)
                         {
-                            var packetStr = new StringBuilder($"RECEIVED: Pre-Transform TCP packet from server at {DateTime.UtcNow}:\n");
+                            var packetStr = new StringBuilder($"RECEIVED: Pre-Transform TCP packet from server by {LocalId}:\n");
                             PacketToString(ReadPacket, packetStr);
                             Logger.Write(packetStr.ToString());
                         }
@@ -202,7 +202,7 @@ namespace OwlTree
 
                         if (Logger.includes.tcpPostTransform)
                         {
-                            var packetStr = new StringBuilder($"RECEIVED: Post-Transform TCP packet from server at {DateTime.UtcNow}:\n");
+                            var packetStr = new StringBuilder($"RECEIVED: Post-Transform TCP packet from server by {LocalId}:\n");
                             PacketToString(ReadPacket, packetStr);
                             Logger.Write(packetStr.ToString());
                         }
@@ -210,17 +210,25 @@ namespace OwlTree
                         ReadPacket.StartMessageRead();
                         while (ReadPacket.TryGetNextMessage(out var bytes))
                         {
-                            if (TryClientMessageDecode(bytes, out var rpcId))
+                            try
                             {
-                                HandleClientConnectionMessage(rpcId, bytes.Slice(RpcId.MaxLength()));
+                                if (TryClientMessageDecode(bytes, out var rpcId))
+                                {
+                                    HandleClientConnectionMessage(rpcId, bytes.Slice(RpcId.MaxLength()));
+                                }
+                                else if (TryPingRequestDecode(bytes, out var request))
+                                {
+                                    HandlePingRequest(request);
+                                }
+                                else if (TryDecode(ClientId.None, bytes, out var message))
+                                {
+                                    _incoming.Enqueue(message);
+                                }
                             }
-                            else if (TryPingRequestDecode(bytes, out var request))
+                            catch (Exception e)
                             {
-                                HandlePingRequest(request);
-                            }
-                            else if (TryDecode(ClientId.None, bytes, out var message))
-                            {
-                                _incoming.Enqueue(message);
+                                if (Logger.includes.exceptions)
+                                    Logger.Write($"FAILED to decode message '{BitConverter.ToString(bytes.ToArray())}'. Exception thrown:\n{e}");
                             }
                         }
                     } while (dataRemaining > 0);
@@ -246,7 +254,7 @@ namespace OwlTree
 
                     if (Logger.includes.udpPreTransform)
                     {
-                        var packetStr = new StringBuilder($"RECEIVED: Pre-Transform UDP packet from server at {DateTime.UtcNow}:\n");
+                        var packetStr = new StringBuilder($"RECEIVED: Pre-Transform UDP packet from server by {LocalId}:\n");
                         PacketToString(ReadPacket, packetStr);
                         Logger.Write(packetStr.ToString());
                     }
@@ -255,7 +263,7 @@ namespace OwlTree
 
                     if (Logger.includes.udpPostTransform)
                     {
-                        var packetStr = new StringBuilder($"RECEIVED: Post-Transform UDP packet from server at {DateTime.UtcNow}:\n");
+                        var packetStr = new StringBuilder($"RECEIVED: Post-Transform UDP packet from server by {LocalId}:\n");
                         PacketToString(ReadPacket, packetStr);
                         Logger.Write(packetStr.ToString());
                     }
@@ -345,7 +353,7 @@ namespace OwlTree
 
                 if (Logger.includes.tcpPreTransform)
                 {
-                    var packetStr = new StringBuilder($"SENDING: Pre-Transform TCP packet to server at {DateTime.UtcNow}:\n");
+                    var packetStr = new StringBuilder($"SENDING: Pre-Transform TCP packet to server from {LocalId}:\n");
                     PacketToString(_tcpPacket, packetStr);
                     Logger.Write(packetStr.ToString());
                 }
@@ -354,7 +362,7 @@ namespace OwlTree
 
                 if (Logger.includes.tcpPostTransform)
                 {
-                    var packetStr = new StringBuilder($"SENDING: Post-Transform TCP packet to server at {DateTime.UtcNow}:\n");
+                    var packetStr = new StringBuilder($"SENDING: Post-Transform TCP packet to server from {LocalId}:\n");
                     PacketToString(_tcpPacket, packetStr);
                     Logger.Write(packetStr.ToString());
                 }
@@ -373,7 +381,7 @@ namespace OwlTree
 
                 if (Logger.includes.udpPreTransform)
                 {
-                    var packetStr = new StringBuilder($"SENDING: Pre-Transform UDP packet to server at {DateTime.UtcNow}:\n");
+                    var packetStr = new StringBuilder($"SENDING: Pre-Transform UDP packet to server from {LocalId}:\n");
                     PacketToString(_udpPacket, packetStr);
                     Logger.Write(packetStr.ToString());
                 }
@@ -382,7 +390,7 @@ namespace OwlTree
 
                 if (Logger.includes.udpPostTransform)
                 {
-                    var packetStr = new StringBuilder($"SENDING: Post-Transform UDP packet to server at {DateTime.UtcNow}:\n");
+                    var packetStr = new StringBuilder($"SENDING: Post-Transform UDP packet to server from {LocalId}:\n");
                     PacketToString(_udpPacket, packetStr);
                     Logger.Write(packetStr.ToString());
                 }

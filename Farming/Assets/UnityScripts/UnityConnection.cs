@@ -61,7 +61,7 @@ public class UnityConnection : MonoBehaviour
             threaded = _args.threaded,
             threadUpdateDelta = _args.threadUpdateDelta,
             printer = (str) => Debug.Log(str),
-            verbosity = Logger.Includes().ClientEvents().Exceptions().AllRpcProtocols().AllTypeIds()
+            verbosity = Logger.Includes().ClientEvents().Exceptions().AllRpcProtocols().AllTypeIds().TcpPostTransform().TcpPreTransform()
         };
 
         Connection = new Connection(args);
