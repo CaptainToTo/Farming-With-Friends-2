@@ -30,7 +30,7 @@ public class Player : MonoBehaviour
     {
         this.netcode = netcode;
         PlayerId = playerId;
-        _idText.text = playerId.ToString();
+        _idText.text = playerId.ToString() + "\n" + netcode.Connection.LocalId;
         this.netcode.Initialize(_machine, new State[]{Idle, Move, Grounded, Airborne, Jump});
     }
 

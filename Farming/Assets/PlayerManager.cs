@@ -59,7 +59,8 @@ public class PlayerManager : NetworkBehaviour
     public void CachePlayer(ClientId id, Player player)
     {
         _players.Add(id, player);
-        player.transform.position = transform.position;
+        if (id == Connection.LocalId)
+            player.transform.position = transform.position;
     }
 
     public bool HasPlayer(ClientId id) => _players.ContainsKey(id);
