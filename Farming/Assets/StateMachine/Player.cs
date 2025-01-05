@@ -5,8 +5,9 @@ using OwlTree.StateMachine;
 using OwlTree.Unity;
 using OwlTree;
 using TMPro;
+using UnityEngine.Events;
 
-public class Player : MonoBehaviour
+public class Player : NetworkBehaviour
 {
     public struct InputData : IStateData
     {
@@ -14,28 +15,30 @@ public class Player : MonoBehaviour
         public Vector2 moveDir;
         public bool jumped;
         public Player self;
+        public bool farmPressed;
     }
-
-    public NetworkGameObject NetObject => GetComponent<NetworkGameObject>();
 
     public NetworkStateMachine netcode;
     private StateMachine _machine;
     public ClientId PlayerId {get; private set; }
 
+    [SerializeField] public GameObject cropPrefab;
     [SerializeField] TextMeshProUGUI _idText;
 
-    public bool IsLocal => netcode == null || PlayerId == netcode.Connection.LocalId;
+    public bool IsLocal => netcode == null || PlayerId == Connection.LocalId;
 
     public void SetNetcode(NetworkStateMachine netcode, ClientId playerId)
     {
         this.netcode = netcode;
         PlayerId = playerId;
         _idText.text = playerId.ToString() + "\n" + netcode.Connection.LocalId;
-        this.netcode.Initialize(_machine, new State[]{Idle, Move, Grounded, Airborne, Jump});
+        this.netcode.Initialize(_machine, new State[]{Idle, Move, Plant, Harvest, Grounded, Airborne, Jump});
     }
 
     public readonly PlayerIdle Idle = new PlayerIdle();
     public readonly PlayerMove Move = new PlayerMove();
+    public readonly PlayerPlant Plant = new PlayerPlant();
+    public readonly PlayerHarvest Harvest = new PlayerHarvest();
     public readonly PlayerGrounded Grounded = new PlayerGrounded();
     public readonly PlayerAirborne Airborne = new PlayerAirborne();
     public readonly PlayerJump Jump = new PlayerJump();
@@ -78,6 +81,11 @@ public class Player : MonoBehaviour
 
     public float speed = 10f;
     public float jumpSpeed = 2f;
+    public float farmSpeed = 3f;
+    public float harvestReach = 1.5f;
+
+    public UnityEvent<Player> OnPlant;
+    public UnityEvent<Player, Crop> OnHarvest;
 
     void Awake()
     {
@@ -99,6 +107,7 @@ public class Player : MonoBehaviour
             deltaTime = Time.deltaTime,
             moveDir = new Vector2(x, y),
             jumped = Input.GetKeyDown(KeyCode.Space),
+            farmPressed = Input.GetMouseButton(0),
             self = this
         };
 

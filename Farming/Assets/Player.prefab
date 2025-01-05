@@ -360,9 +360,18 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 4b5e2aeaf5bdad14d8683ba89d39aae0, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  cropPrefab: {fileID: 0}
   _idText: {fileID: 3534835457018906177}
   speed: 10
   jumpSpeed: 5
+  farmSpeed: 1
+  harvestReach: 1.5
+  OnPlant:
+    m_PersistentCalls:
+      m_Calls: []
+  OnHarvest:
+    m_PersistentCalls:
+      m_Calls: []
 --- !u!54 &7529584863796366075
 Rigidbody:
   m_ObjectHideFlags: 0

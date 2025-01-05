@@ -84,7 +84,7 @@ namespace OwlTree.StateMachine
             _originalAuth = Connection.Authority;
             Connection.OnHostMigration += (id) => {
                 if (Authority == _originalAuth && Connection.IsAuthority)
-                    RPC_SetAuthority(id);
+                    SetAuthority(id);
             };
         }
 
@@ -144,7 +144,7 @@ namespace OwlTree.StateMachine
         /// Rpc to set a new authority of this state machine.
         /// </summary>
         [Rpc(RpcCaller.Server, InvokeOnCaller = true)]
-        public virtual void RPC_SetAuthority(ClientId authority)
+        public virtual void SetAuthority(ClientId authority)
         {
             Authority = authority;
         }
@@ -155,11 +155,11 @@ namespace OwlTree.StateMachine
                 throw new ArgumentException($"The state of type {state.GetType()} was not assigned as a valid state on initialization.");
             
             if (Connection.LocalId == Authority)
-                RPC_RemoveState(i);
+                RemoveState(i);
         }
 
         [Rpc(RpcCaller.Server)]
-        public virtual void RPC_RemoveState(int i, [RpcCaller] ClientId caller = default)
+        public virtual void RemoveState(int i, [RpcCaller] ClientId caller = default)
         {
             if (!Initialized)
                 return;
@@ -167,7 +167,7 @@ namespace OwlTree.StateMachine
             if (caller != Authority)
             {
                 if (Connection.IsAuthority)
-                    RPC_SetAuthority(Authority);
+                    SetAuthority(Authority);
                 return;
             }
             
@@ -180,11 +180,11 @@ namespace OwlTree.StateMachine
                 throw new ArgumentException($"The state of type {state.GetType()} was not assigned as a valid state on initialization.");
             
             if (Connection.LocalId == Authority)
-                RPC_InsertState(i, GetId(state));
+                InsertState(i, GetId(state));
         }
 
         [Rpc(RpcCaller.Any)]
-        public virtual void RPC_InsertState(int i, int state, [RpcCaller] ClientId caller = default)
+        public virtual void InsertState(int i, int state, [RpcCaller] ClientId caller = default)
         {
             if (!Initialized)
                 return;
@@ -192,7 +192,7 @@ namespace OwlTree.StateMachine
             if (caller != Authority)
             {
                 if (Connection.IsAuthority)
-                    RPC_SetAuthority(Authority);
+                    SetAuthority(Authority);
                 return;
             }
 
@@ -210,11 +210,11 @@ namespace OwlTree.StateMachine
                 throw new ArgumentException($"The state of type {to.GetType()} was not assigned as a valid state on initialization.");
             
             if (Connection.LocalId == Authority)
-                RPC_SwapStates(GetId(from), GetId(to), ind);
+                SwapStates(GetId(from), GetId(to), ind);
         }
 
         [Rpc(RpcCaller.Any)]
-        public virtual void RPC_SwapStates(int from, int to, int ind, [RpcCaller] ClientId caller = default)
+        public virtual void SwapStates(int from, int to, int ind, [RpcCaller] ClientId caller = default)
         {
             if (!Initialized)
                 return;
@@ -222,7 +222,7 @@ namespace OwlTree.StateMachine
             if (caller != Authority)
             {
                 if (Connection.IsAuthority)
-                    RPC_SetAuthority(Authority);
+                    SetAuthority(Authority);
                 return;
             }
             

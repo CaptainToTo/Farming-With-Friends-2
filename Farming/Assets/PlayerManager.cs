@@ -6,6 +6,7 @@ using OwlTree;
 using OwlTree.StateMachine;
 using OwlTree.Unity;
 using UnityEngine;
+using UnityEngine.Events;
 
 public class PlayerManager : NetworkBehaviour
 {
@@ -42,13 +43,15 @@ public class PlayerManager : NetworkBehaviour
 
     public IEnumerable<KeyValuePair<ClientId, Player>> Players => _players;
 
+    public UnityEvent<Player> OnNewPlayer;
+
     private void SpawnPlayer(ClientId player)
     {
         if (Connection.IsAuthority)
         {
             var playerObj = Connection.Spawn(_playerPrefab);
             var stateMachine = Connection.Spawn<NetworkStateMachine>();
-            stateMachine.RPC_SetAuthority(player);
+            stateMachine.SetAuthority(player);
             playerObj.GetComponent<Player>().SetNetcode(stateMachine, player);
             playerObj.GetComponent<NetworkTransform>().SetAuthority(player);
             CachePlayer(player, playerObj.GetComponent<Player>());
@@ -61,6 +64,7 @@ public class PlayerManager : NetworkBehaviour
         _players.Add(id, player);
         if (id == Connection.LocalId)
             player.transform.position = transform.position;
+        OnNewPlayer.Invoke(player);
     }
 
     public bool HasPlayer(ClientId id) => _players.ContainsKey(id);

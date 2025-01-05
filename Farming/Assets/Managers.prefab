@@ -11,8 +11,9 @@ GameObject:
   - component: {fileID: 5894789889055388979}
   - component: {fileID: 6066683151487530692}
   - component: {fileID: 2605571116324470011}
+  - component: {fileID: -226191323069538415}
   m_Layer: 0
-  m_Name: PlayerManager
+  m_Name: Managers
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -46,6 +47,21 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _playerPrefab: {fileID: 5894280456266665069, guid: 141405ecfaae1d840bba0f24fc50aa18, type: 3}
+  OnNewPlayer:
+    m_PersistentCalls:
+      m_Calls:
+      - m_Target: {fileID: -226191323069538415}
+        m_TargetAssemblyTypeName: CropManager, Assembly-CSharp
+        m_MethodName: AttachToPlayer
+        m_Mode: 0
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
 --- !u!114 &2605571116324470011
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -64,3 +80,16 @@ MonoBehaviour:
   OnDespawn:
     m_PersistentCalls:
       m_Calls: []
+--- !u!114 &-226191323069538415
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 371684750797230727}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 425541067d3835d41a604b05546904b8, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  cropPrefab: {fileID: 9131354100887595100, guid: 768f4162c896dff478c68f45388da685, type: 3}
