@@ -95,17 +95,4 @@ namespace OwlTree.StateMachine
             return GetType().ToString();
         }
     }
-
-    public abstract class State<T> : State where T : IStateData
-    {
-        public virtual void OnEnter(State from, T data) { }
-
-        public virtual void OnExit(State to, T data) { }
-
-        public virtual void LogicUpdate(T data) { }
-
-        public virtual void PhysicsUpdate(T data) { }
-
-        public virtual void RenderUpdate(T data) { }
-    }
 }

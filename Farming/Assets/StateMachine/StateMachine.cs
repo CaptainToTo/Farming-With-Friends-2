@@ -438,16 +438,4 @@ namespace OwlTree.StateMachine
             return str;
         }
     }
-
-    public class StateMachine<T> : StateMachine where T : IStateData
-    {
-
-        public StateMachine(IEnumerable<State<T>> states, T swapData) : base(states, swapData)
-        {
-        }
-
-        public StateMachine(State<T> root, T swapData) : base(root, swapData)
-        {
-        }
-    }
 }
