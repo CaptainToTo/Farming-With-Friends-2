@@ -18,7 +18,7 @@ namespace OwlTree
         public ClientBuffer(Args args, int requestRate, int requestLimit, bool requestAsHost) : base(args)
         {
             _tcpClient = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
-            _tcpEndPoint = new IPEndPoint(Address, TcpPort);
+            _tcpEndPoint = new IPEndPoint(Address, ServerTcpPort);
 
             _udpClient = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
             _udpClient.Bind(new IPEndPoint(IPAddress.Any, 0));
@@ -49,6 +49,10 @@ namespace OwlTree
         private List<ClientId> _clients = new List<ClientId>();
 
         private uint _hash = 0;
+
+        public override int LocalTcpPort() => _tcpClient != null ? ((IPEndPoint)_tcpClient.LocalEndPoint).Port : 0;
+
+        public override int LocalUdpPort() => ((IPEndPoint)_udpClient.LocalEndPoint).Port;
 
         // messages to be sent ot the sever
         private Packet _tcpPacket;

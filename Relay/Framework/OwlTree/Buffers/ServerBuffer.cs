@@ -20,7 +20,7 @@ namespace OwlTree
         /// <param name="maxClients">The max number of clients that can be connected at once.</param>
         public ServerBuffer(Args args, int maxClients, long requestTimeout, IPAddress[] whitelist) : base (args)
         {
-            IPEndPoint tpcEndPoint = new IPEndPoint(IPAddress.Any, TcpPort);
+            IPEndPoint tpcEndPoint = new IPEndPoint(IPAddress.Any, ServerTcpPort);
             _tcpServer = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
             _tcpServer.Bind(tpcEndPoint);
             _tcpServer.Listen(maxClients);
@@ -41,6 +41,10 @@ namespace OwlTree
             IsReady = true;
             OnReady?.Invoke(LocalId);
         }
+
+        public override int LocalTcpPort() => ServerTcpPort;
+
+        public override int LocalUdpPort() => ServerUdpPort;
 
         /// <summary>
         /// The maximum number of clients allowed to be connected at once on this connection.

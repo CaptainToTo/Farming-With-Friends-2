@@ -15,7 +15,7 @@ namespace OwlTree
     {
         public RelayBuffer(Args args, int maxClients, long requestTimeout, string hostAddr, bool migratable, bool shutdownWhenEmpty, IPAddress[] whitelist) : base(args)
         {
-            IPEndPoint tpcEndPoint = new IPEndPoint(IPAddress.Any, TcpPort);
+            IPEndPoint tpcEndPoint = new IPEndPoint(IPAddress.Any, ServerTcpPort);
             _tcpRelay = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
             _tcpRelay.Bind(tpcEndPoint);
             _tcpRelay.Listen(maxClients);
@@ -43,6 +43,10 @@ namespace OwlTree
             IsReady = true;
             OnReady?.Invoke(LocalId);
         }
+
+        public override int LocalTcpPort() => ServerTcpPort;
+
+        public override int LocalUdpPort() => ServerUdpPort;
 
         /// <summary>
         /// The maximum number of clients allowed to be connected at once in this session.

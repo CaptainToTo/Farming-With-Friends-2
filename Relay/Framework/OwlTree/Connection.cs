@@ -380,6 +380,14 @@ namespace OwlTree
         /// </summary>
         public bool IsRelay { get => NetRole == Role.Relay; }
 
+        public int ServerTcpPort { get => _buffer.ServerTcpPort; }
+
+        public int ServerUdpPort { get => _buffer.ServerUdpPort; }
+
+        public int LocalTcpPort { get => _buffer.LocalTcpPort(); }
+
+        public int LocalUdpPort { get => _buffer.LocalUdpPort(); }
+
         private NetworkBuffer _buffer;
 
         private enum ConnectionEventType
