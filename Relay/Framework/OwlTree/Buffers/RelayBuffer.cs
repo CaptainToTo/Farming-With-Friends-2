@@ -19,11 +19,13 @@ namespace OwlTree
             _tcpRelay = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
             _tcpRelay.Bind(tpcEndPoint);
             _tcpRelay.Listen(maxClients);
+            ServerTcpPort = ((IPEndPoint)_tcpRelay.LocalEndPoint).Port;
             _readList.Add(_tcpRelay);
 
             IPEndPoint udpEndPoint = new IPEndPoint(IPAddress.Any, ServerUdpPort);
             _udpRelay = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
             _udpRelay.Bind(udpEndPoint);
+            ServerUdpPort = ((IPEndPoint)_udpRelay.LocalEndPoint).Port;
             _readList.Add(_udpRelay);
 
             _whitelist = whitelist;

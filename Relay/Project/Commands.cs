@@ -7,10 +7,11 @@ public static class Commands
     {
         Console.WriteLine("Relay server commands:");
         Console.WriteLine("  (h)elp:    prints this command list");
-        Console.WriteLine("  (p)layers: prints a list of players currently on the server");
+        Console.WriteLine("  (r)elays:  prints a list of relay servers currently running");
         Console.WriteLine("  (q)uit:    shutdown the relay server");
-        Console.WriteLine("  ping [client id]: ping a client to test their latency");
-        Console.WriteLine("  (d)isconnect [client id]: disconnect a client from the server");
+        Console.WriteLine("  (p)layers [session id]: prints a list of players currently on the server");
+        Console.WriteLine("  ping [session id] [client id]: ping a client to test their latency");
+        Console.WriteLine("  (d)isconnect [session id] [client id]: disconnect a client from the server");
     }
 
     public static void PlayerList(Connection relay)
@@ -77,5 +78,13 @@ public static class Commands
 
         relay.Disconnect(clientId);
         Console.WriteLine("disconnecting " + clientId);
+    }
+
+    internal static void RelayList(ConnectionManager? relays)
+    {
+        if (relays == null) return;
+        Console.WriteLine("Relays:");
+        foreach (var relay in relays.Connections)
+            Console.WriteLine($"   {(relay.IsRelay ? "relay" : "server")} {relays.Get(relay)} ({relay.AppId}): TCP: {relay.ServerTcpPort}, UDP: {relay.ServerUdpPort}, {relay.ClientCount}/{relay.MaxClients} clients");
     }
 }

@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Net.Http;
 using System.Text;
@@ -20,17 +21,17 @@ namespace OwlTree.Matchmaking
 
     public struct MatchmakingRequest
     {
-        public string appId;
-        public string sessionId;
-        public ServerType serverType;
-        public ClientRole clientRole;
-        public int maxClients;
-        public bool migratable;
-        public ushort owlTreeVersion;
-        public ushort minOwlTreeVersion;
-        public ushort appVersion;
-        public ushort minAppVersion;
-        public Dictionary<string, string> args;
+        public string appId { get; set; }
+        public string sessionId { get; set; }
+        public ServerType serverType { get; set; }
+        public ClientRole clientRole { get; set; }
+        public int maxClients { get; set; }
+        public bool migratable { get; set; }
+        public ushort owlTreeVersion { get; set; }
+        public ushort minOwlTreeVersion { get; set; }
+        public ushort appVersion { get; set; }
+        public ushort minAppVersion { get; set; }
+        public Dictionary<string, string> args { get; set; }
 
         public string Serialize()
         {
@@ -99,6 +100,7 @@ namespace OwlTree.Matchmaking
                     minAppVersion = _args.minAppVersion,
                     args = _args.args
                 }.Serialize();
+                Console.WriteLine(request);
                 var content = new StringContent(request, Encoding.UTF8, "application/json");
 
                 var response = await client.PostAsync(_args.serverDomain + "/matchmaking", content);
@@ -106,16 +108,18 @@ namespace OwlTree.Matchmaking
                 if (response.IsSuccessStatusCode)
                 {
                     string responseContent = await response.Content.ReadAsStringAsync();
+                    Console.WriteLine(responseContent);
                     return MatchmakingResponse.Deserialize(responseContent);
                 }
                 else
                 {
                     switch ((int)response.StatusCode)
                     {
-                        case (int)ResponseCodes.NotFound: return MatchmakingResponse.NotFound;
                         case (int)ResponseCodes.RequestRejected: return MatchmakingResponse.RequestRejected;
+                        case (int)ResponseCodes.NotFound: 
+                        default:
+                        return MatchmakingResponse.NotFound;
                     }
-                    return MatchmakingResponse.NotFound;
                 }
             }
             catch

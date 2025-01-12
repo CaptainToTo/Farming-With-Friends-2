@@ -24,11 +24,14 @@ namespace OwlTree
             _tcpServer = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
             _tcpServer.Bind(tpcEndPoint);
             _tcpServer.Listen(maxClients);
+            ServerTcpPort = ((IPEndPoint)_tcpServer.LocalEndPoint).Port;
             _readList.Add(_tcpServer);
 
             IPEndPoint udpEndPoint = new IPEndPoint(IPAddress.Any, ServerUdpPort);
+            ServerUdpPort = udpEndPoint.Port;
             _udpServer = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
             _udpServer.Bind(udpEndPoint);
+            ServerTcpPort = ((IPEndPoint)_udpServer.LocalEndPoint).Port;
             _readList.Add(_udpServer);
 
             _clientData = new ClientDataList(BufferSize, DateTimeOffset.UtcNow.Millisecond);

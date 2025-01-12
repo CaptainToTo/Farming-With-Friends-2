@@ -1,13 +1,34 @@
 ﻿using OwlTree;
+using OwlTree.Matchmaking;
 
 var rand = new Random();
 var logId = rand.Next();
 var logFile = $"client{logId}.log";
 Console.WriteLine("client log id: " + logId.ToString());
 
+var request = new MatchmakingClient(new MatchmakingClient.Args{
+    serverDomain = "http://localhost:5000",
+    appId = "FarmingWithFriends_OwlTreeExample",
+    sessionId = logId.ToString(),
+    serverType = ServerType.Relay,
+    clientRole = ClientRole.Host,
+    maxClients = 6,
+    migratable = true
+});
+var response = await request.MakeRequest();
+
+if (response.RequestFailed)
+{
+    Console.WriteLine("failed to request relay server");
+    Environment.Exit(0);
+}
+
 var client = new Connection(new Connection.Args{
     role = Connection.Role.Client,
-    appId = "FarmingWithFriends_OwlTreeExample",
+    serverAddr = response.serverAddr,
+    tcpPort = response.tcpPort,
+    udpPort = response.udpPort,
+    appId = response.appId,
     printer = (str) => File.AppendAllText(logFile, str),
     verbosity = Logger.Includes().All()
 });

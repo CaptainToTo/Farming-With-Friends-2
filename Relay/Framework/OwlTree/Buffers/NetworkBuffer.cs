@@ -127,7 +127,7 @@ namespace OwlTree
 
             public string addr;
             public int tcpPort;
-            public int serverUdpPort;
+            public int udpPort;
 
             public int bufferSize;
 
@@ -147,8 +147,8 @@ namespace OwlTree
         protected Packet ReadPacket;
 
         // ip and port number this client is bound to
-        public int ServerTcpPort { get; private set; } 
-        public int ServerUdpPort { get; private set; }
+        public int ServerTcpPort { get; protected set; } 
+        public int ServerUdpPort { get; protected set; }
         public IPAddress Address { get; private set; }
 
         public abstract int LocalTcpPort();
@@ -183,7 +183,7 @@ namespace OwlTree
 
             Address = IPAddress.Parse(args.addr);
             ServerTcpPort = args.tcpPort;
-            ServerUdpPort = args.serverUdpPort;
+            ServerUdpPort = args.udpPort;
             BufferSize = args.bufferSize;
             ReadBuffer = new byte[BufferSize];
             TryDecode = args.decoder;

@@ -1,6 +1,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Net;
 using System.Text;
 
@@ -49,7 +50,7 @@ namespace OwlTree.Matchmaking
                         var requestObj = MatchmakingRequest.Deserialize(requestBody);
                         var responseObj = _callback.Invoke(requestObj);
                         string responseBody = responseObj.Serialize();
-                        response.StatusCode = (int)responseObj.ResponseCode;
+                        response.StatusCode = (int)responseObj.responseCode;
                         byte[] buffer = Encoding.UTF8.GetBytes(responseBody);
                         response.ContentLength64 = buffer.Length;
                         response.OutputStream.Write(buffer, 0, buffer.Length);

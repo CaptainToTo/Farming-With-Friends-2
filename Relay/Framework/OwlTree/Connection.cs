@@ -58,7 +58,7 @@ namespace OwlTree
             /// <summary>
             /// The port the server will listen to for UDP packets. <b>Default = 9000</b>
             /// </summary>
-            public int serverUdpPort = 9000;
+            public int udpPort = 9000;
             /// <summary>
             /// The maximum number of clients the server will allow to be connected at once.
             /// <b>Default = 4</b>
@@ -214,6 +214,9 @@ namespace OwlTree
             if (Protocols != null && _logger.includes.allRpcProtocols)
                 _logger.Write(Protocols.GetAllProtocolSummaries());
 
+            AppId = args.appId;
+            MaxClients = args.maxClients;
+
             NetworkBuffer.Args bufferArgs = new NetworkBuffer.Args(){
                 owlTreeVer = args.owlTreeVersion,
                 minOwlTreeVer = args.minOwlTreeVersion,
@@ -222,7 +225,7 @@ namespace OwlTree
                 appId = args.appId,
                 addr = args.serverAddr,
                 tcpPort = args.tcpPort,
-                serverUdpPort = args.serverUdpPort,
+                udpPort = args.udpPort,
                 bufferSize = args.bufferSize,
                 encoder = EncodeRpc,
                 decoder = TryDecodeRpc,
@@ -388,6 +391,10 @@ namespace OwlTree
 
         public int LocalUdpPort { get => _buffer.LocalUdpPort(); }
 
+        public string AppId { get; private set; }
+
+        public string SessionId { get; private set; }
+
         private NetworkBuffer _buffer;
 
         private enum ConnectionEventType
@@ -408,6 +415,8 @@ namespace OwlTree
         /// The number of connected clients.
         /// </summary>
         public int ClientCount => _clients.Count;
+
+        public int MaxClients { get; private set; }
 
         /// <summary>
         /// Iterable of all connected clients.
