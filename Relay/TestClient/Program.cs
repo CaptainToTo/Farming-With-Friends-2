@@ -6,16 +6,17 @@ var logId = rand.Next();
 var logFile = $"client{logId}.log";
 Console.WriteLine("client log id: " + logId.ToString());
 
-var request = new MatchmakingClient(new MatchmakingClient.Args{
-    serverDomain = "http://localhost:5000",
+var request = new MatchmakingClient("http://localhost:5000");
+var response = await request.MakeRequest(new MatchmakingRequest{
     appId = "FarmingWithFriends_OwlTreeExample",
     sessionId = logId.ToString(),
     serverType = ServerType.Relay,
     clientRole = ClientRole.Host,
     maxClients = 6,
-    migratable = true
+    migratable = true,
+    owlTreeVersion = 1,
+    appVersion = 1
 });
-var response = await request.MakeRequest();
 
 if (response.RequestFailed)
 {
@@ -24,12 +25,13 @@ if (response.RequestFailed)
 }
 
 var client = new Connection(new Connection.Args{
-    role = Connection.Role.Client,
+    role = NetRole.Client,
     serverAddr = response.serverAddr,
     tcpPort = response.tcpPort,
     udpPort = response.udpPort,
     appId = response.appId,
-    printer = (str) => File.AppendAllText(logFile, str),
+    sessionId = response.sessionId,
+    logger = (str) => File.AppendAllText(logFile, str),
     verbosity = Logger.Includes().All()
 });
 

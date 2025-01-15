@@ -31,7 +31,6 @@ namespace OwlTree
             _whitelist = whitelist;
 
             ShutdownWhenEmpty = shutdownWhenEmpty;
-
             if (hostAddr != null)
                 _hostAddr = IPAddress.Parse(hostAddr);
             Migratable = ShutdownWhenEmpty ? migratable : true;
@@ -49,11 +48,6 @@ namespace OwlTree
         public override int LocalTcpPort() => ServerTcpPort;
 
         public override int LocalUdpPort() => ServerUdpPort;
-
-        /// <summary>
-        /// The maximum number of clients allowed to be connected at once in this session.
-        /// </summary>
-        public int MaxClients { get; private set; }
 
         // server state
         private Socket _tcpRelay;
@@ -87,7 +81,7 @@ namespace OwlTree
         /// </summary>
         public bool ShutdownWhenEmpty { get; private set; }
 
-        public override void Read()
+        public override void Recv()
         {
             if (!IsActive)
                 return;
@@ -144,7 +138,7 @@ namespace OwlTree
 
                     // send new client their id
                     var span = clientData.tcpPacket.GetSpan(LocalClientConnectLength);
-                    LocalClientConnectEncode(span, new ClientIdAssignment(clientData.id, Authority, clientData.hash));
+                    LocalClientConnectEncode(span, new ClientIdAssignment(clientData.id, Authority, clientData.hash, MaxClients));
 
                     foreach (var otherClient in _clientData)
                     {
@@ -168,7 +162,8 @@ namespace OwlTree
                 }
                 else if (socket == _udpRelay) // receive client udp messages
                 {
-                    do {
+                    while (_udpRelay.Available > 0)
+                    {
                         Array.Clear(ReadBuffer, 0, ReadBuffer.Length);
                         ReadPacket.Clear();
 
@@ -199,7 +194,7 @@ namespace OwlTree
                             var accepted = false;
 
                             if (HasWhitelist && !IsOnWhitelist(((IPEndPoint)source).Address))
-                                break;
+                                continue;
 
                             if (Logger.includes.connectionAttempts)
                             {
@@ -210,7 +205,7 @@ namespace OwlTree
                             if (_hostAddr != null && Authority == ClientId.None && !_hostAddr.Equals(((IPEndPoint)source).Address))
                             {
                                 Logger.Write("Connection attempt from " + ((IPEndPoint)source).Address.ToString() + " (udp port: " + ((IPEndPoint)source).Port + ") rejected.");
-                                break;
+                                continue;
                             }
 
                             ReadPacket.StartMessageRead();
@@ -218,8 +213,8 @@ namespace OwlTree
                             {
                                 var rpcId = ServerMessageDecode(bytes, out var request);
                                 if (
-                                    rpcId == RpcId.CONNECTION_REQUEST && 
-                                    request.appId == ApplicationId && !request.isHost &&
+                                    rpcId == RpcId.ConnectionRequestId && 
+                                    request.appId == ApplicationId && request.sessionId == SessionId && !request.isHost &&
                                     _clientData.Count < MaxClients && _requests.Count < MaxClients
                                 )
                                 {
@@ -245,12 +240,18 @@ namespace OwlTree
                             {
                                 Logger.Write("Connection attempt from " + ((IPEndPoint)source).Address.ToString() + " (udp port: " + ((IPEndPoint)source).Port + ") " + (accepted ? "accepted, awaiting TCP handshake..." : "rejected."));
                             }
-                            break;
+                            continue;
+                        }
+                        else if (client.hash != ReadPacket.header.hash)
+                        {
+                            if (Logger.includes.exceptions)
+                                Logger.Write($"Incorrect hash received in UDP packet from client {client.id}. Got {ReadPacket.header.hash}, but expected {client.hash}. Ignoring packet.");
+                            continue;
                         }
 
                         if (Logger.includes.udpPreTransform)
                         {
-                            var packetStr = new StringBuilder($"RECEIVED: Pre-Transform UDP packet from {client.id} at {DateTime.UtcNow}:\n");
+                            var packetStr = new StringBuilder($"RECEIVED: Pre-Transform UDP packet from {client.id}:\n");
                             PacketToString(ReadPacket, packetStr);
                             Logger.Write(packetStr.ToString());
                         }
@@ -259,7 +260,7 @@ namespace OwlTree
 
                         if (Logger.includes.udpPostTransform)
                         {
-                            var packetStr = new StringBuilder($"RECEIVED: Post-Transform UDP packet from {client.id} at {DateTime.UtcNow}:\n");
+                            var packetStr = new StringBuilder($"RECEIVED: Post-Transform UDP packet from {client.id}:\n");
                             PacketToString(ReadPacket, packetStr);
                             Logger.Write(packetStr.ToString());
                         }
@@ -267,19 +268,27 @@ namespace OwlTree
                         ReadPacket.StartMessageRead();
                         while (ReadPacket.TryGetNextMessage(out var bytes))
                         {
-                            var rpcId = new RpcId(bytes);
-                            if (rpcId >= RpcId.FIRST_RPC_ID)
+                            try
                             {
-                                RpcEncoding.DecodeRpcHeader(bytes, out rpcId, out var caller, out var callee, out var target);
-                                if (caller != client.id) continue;
+                                var rpcId = new RpcId(bytes);
+                                if (rpcId >= RpcId.FirstRpcId)
+                                {
+                                    RpcEncoding.DecodeRpcHeader(bytes, out rpcId, out var caller, out var callee, out var target);
+                                    if (caller != client.id) continue;
 
-                                if (callee == ClientId.None)
-                                    RelayUdpMessage(bytes, client.id);
-                                else
-                                    RelayMessageTo(bytes, _clientData.Find(callee).udpPacket);
+                                    if (callee == ClientId.None)
+                                        RelayUdpMessage(bytes, client.id);
+                                    else
+                                        RelayMessageTo(bytes, _clientData.Find(callee).udpPacket);
+                                }
+                            }
+                            catch (Exception e)
+                            {
+                                if (Logger.includes.exceptions)
+                                    Logger.Write($"FAILED to relay UDP message '{BitConverter.ToString(bytes.ToArray())}' from {client.id}. Exception thrown:\n{e}");
                             }
                         }
-                    } while (_udpRelay.Available > 0);
+                    }
                 }
                 else // receive client tcp messages
                 {
@@ -327,7 +336,7 @@ namespace OwlTree
 
                         if (Logger.includes.tcpPreTransform)
                         {
-                            var packetStr = new StringBuilder($"RECEIVED: Pre-Transform TCP packet from {client.id} at {DateTime.UtcNow}:\n");
+                            var packetStr = new StringBuilder($"RECEIVED: Pre-Transform TCP packet from {client.id}:\n");
                             PacketToString(ReadPacket, packetStr);
                             Logger.Write(packetStr.ToString());
                         }
@@ -336,7 +345,7 @@ namespace OwlTree
 
                         if (Logger.includes.tcpPostTransform)
                         {
-                            var packetStr = new StringBuilder($"RECEIVED: Post-Transform TCP packet from {client.id} at {DateTime.UtcNow}:\n");
+                            var packetStr = new StringBuilder($"RECEIVED: Post-Transform TCP packet from {client.id}:\n");
                             PacketToString(ReadPacket, packetStr);
                             Logger.Write(packetStr.ToString());
                         }
@@ -344,33 +353,41 @@ namespace OwlTree
                         ReadPacket.StartMessageRead();
                         while (ReadPacket.TryGetNextMessage(out var bytes))
                         {
-                            var rpcId = new RpcId(bytes);
+                            try
+                            {
+                                var rpcId = new RpcId(bytes);
 
-                            if (rpcId.Id == RpcId.CLIENT_DISCONNECTED_MESSAGE_ID && client.id == Authority)
-                            {
-                                Disconnect(new ClientId(bytes.Slice(rpcId.ByteLength())));
-                            }
-                            else if (rpcId.Id == RpcId.HOST_MIGRATION && client.id == Authority)
-                            {
-                                MigrateHost(new ClientId(bytes.Slice(rpcId.ByteLength())));
-                            }
-                            else if ((rpcId.Id == RpcId.NETWORK_OBJECT_SPAWN || rpcId.Id == RpcId.NETWORK_OBJECT_DESPAWN) && client.id == Authority)
-                            {
-                                RelayTcpMessage(bytes, client.id);
-                            }
-                            else if (rpcId.Id == RpcId.PING_REQUEST && TryPingRequestDecode(bytes, out var request))
-                            {
-                                HandlePingRequest(request);
-                            }
-                            else if (rpcId >= RpcId.FIRST_RPC_ID)
-                            {
-                                RpcEncoding.DecodeRpcHeader(bytes, out rpcId, out var caller, out var callee, out var target);
-                                if (caller != client.id) continue;
-
-                                if (callee == ClientId.None)
+                                if (rpcId.Id == RpcId.ClientDisconnectedId && client.id == Authority)
+                                {
+                                    Disconnect(new ClientId(bytes.Slice(rpcId.ByteLength())));
+                                }
+                                else if (rpcId.Id == RpcId.HostMigrationId && client.id == Authority)
+                                {
+                                    MigrateHost(new ClientId(bytes.Slice(rpcId.ByteLength())));
+                                }
+                                else if ((rpcId.Id == RpcId.NetworkObjectSpawnId || rpcId.Id == RpcId.NetworkObjectDespawnId) && client.id == Authority)
+                                {
                                     RelayTcpMessage(bytes, client.id);
-                                else
-                                    RelayMessageTo(bytes, _clientData.Find(callee).tcpPacket);
+                                }
+                                else if (rpcId.Id == RpcId.PingRequestId && TryPingRequestDecode(bytes, out var request))
+                                {
+                                    HandlePingRequest(request);
+                                }
+                                else if (rpcId >= RpcId.FirstRpcId)
+                                {
+                                    RpcEncoding.DecodeRpcHeader(bytes, out rpcId, out var caller, out var callee, out var target);
+                                    if (caller != client.id) continue;
+
+                                    if (callee == ClientId.None)
+                                        RelayTcpMessage(bytes, client.id);
+                                    else
+                                        RelayMessageTo(bytes, _clientData.Find(callee).tcpPacket);
+                                }
+                            }
+                            catch (Exception e)
+                            {
+                                if (Logger.includes.exceptions)
+                                    Logger.Write($"FAILED to relay TCP message '{BitConverter.ToString(bytes.ToArray())}' from {client.id}. Exception thrown:\n{e}");
                             }
                         }
                     } while (dataRemaining > 0);
@@ -417,7 +434,7 @@ namespace OwlTree
                 {
                     original.PingResponded();
                     _pingRequests.Remove(original);
-                    _incoming.Enqueue(new Message(ClientId.None, LocalId, new RpcId(RpcId.PING_REQUEST), NetworkId.None, Protocol.Tcp, new object[]{original}));
+                    _incoming.Enqueue(new Message(ClientId.None, LocalId, new RpcId(RpcId.PingRequestId), NetworkId.None, Protocol.Tcp, RpcPerms.AnyToAll, new object[]{original}));
                 }
             }
             else
@@ -476,7 +493,7 @@ namespace OwlTree
 
                     if (Logger.includes.tcpPreTransform)
                     {
-                        var packetStr = new StringBuilder($"SENDING: Pre-Transform TCP packet to {client.id} at {DateTime.UtcNow}:\n");
+                        var packetStr = new StringBuilder($"SENDING: Pre-Transform TCP packet to {client.id}:\n");
                         PacketToString(client.tcpPacket, packetStr);
                         Logger.Write(packetStr.ToString());
                     }
@@ -486,7 +503,7 @@ namespace OwlTree
 
                     if (Logger.includes.tcpPostTransform)
                     {
-                        var packetStr = new StringBuilder($"SENDING: Post-Transform TCP packet to {client.id} at {DateTime.UtcNow}:\n");
+                        var packetStr = new StringBuilder($"SENDING: Post-Transform TCP packet to {client.id}:\n");
                         PacketToString(client.tcpPacket, packetStr);
                         Logger.Write(packetStr.ToString());
                     }
@@ -501,7 +518,7 @@ namespace OwlTree
 
                     if (Logger.includes.tcpPreTransform)
                     {
-                        var packetStr = new StringBuilder($"SENDING: Pre-Transform UDP packet to {client.id} at {DateTime.UtcNow}:\n");
+                        var packetStr = new StringBuilder($"SENDING: Pre-Transform UDP packet to {client.id}:\n");
                         PacketToString(client.udpPacket, packetStr);
                         Logger.Write(packetStr.ToString());
                     }
@@ -511,7 +528,7 @@ namespace OwlTree
 
                     if (Logger.includes.tcpPostTransform)
                     {
-                        var packetStr = new StringBuilder($"SENDING: Post-Transform UDP packet to {client.id} at {DateTime.UtcNow}:\n");
+                        var packetStr = new StringBuilder($"SENDING: Post-Transform UDP packet to {client.id}:\n");
                         PacketToString(client.udpPacket, packetStr);
                         Logger.Write(packetStr.ToString());
                     }

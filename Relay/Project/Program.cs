@@ -24,7 +24,8 @@ public static class Program
 
             var connection = relays.Add(request.sessionId, new Connection.Args{
                 appId = request.appId,
-                role = Connection.Role.Relay,
+                sessionId = request.sessionId,
+                role = NetRole.Relay,
                 tcpPort = 0,
                 udpPort = 0,
                 maxClients = request.maxClients,
@@ -33,7 +34,7 @@ public static class Program
                 minOwlTreeVersion = request.minOwlTreeVersion,
                 appVersion = request.appVersion,
                 minAppVersion = request.minAppVersion,
-                printer = (str) => File.AppendAllText(logFile, str),
+                logger = (str) => File.AppendAllText(logFile, str),
                 verbosity = Logger.Includes().All()
             });
 

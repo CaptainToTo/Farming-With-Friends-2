@@ -7,13 +7,23 @@ using System.Text;
 
 namespace OwlTree.Matchmaking
 {
+    /// <summary>
+    /// Run on the server to listen for matchmaking requests from a matchmaking client.
+    /// </summary>
     public class MatchmakingEndpoint
     {
+        /// <summary>
+        /// Function signature used to inject request handling into the endpoint.
+        /// </summary>
         public delegate MatchmakingResponse ProcessRequest(MatchmakingRequest request);
 
         private HttpListener _listener;
         private ProcessRequest _callback;
 
+        /// <summary>
+        /// Create a new matchmaking endpoint that will listen to the given domain.
+        /// The given callback will be invoked when a matchmaking request is received.
+        /// </summary>
         public MatchmakingEndpoint(string domain, ProcessRequest processRequest)
         {
             _listener = new HttpListener();
@@ -21,6 +31,10 @@ namespace OwlTree.Matchmaking
             _callback = processRequest;
         }
 
+        /// <summary>
+        /// Create a new matchmaking endpoint that will listen to the given domains.
+        /// The given callback will be invoked when a matchmaking request is received.
+        /// </summary>
         public MatchmakingEndpoint(IEnumerable<string> domains, ProcessRequest processRequest)
         {
             _listener = new HttpListener();
@@ -29,8 +43,14 @@ namespace OwlTree.Matchmaking
             _callback = processRequest;
         }
 
+        /// <summary>
+        /// Returns true if endpoint is currently listening for matchmaking requests.
+        /// </summary>
         public bool IsActive { get; private set; } = false;
 
+        /// <summary>
+        /// Start listening for matchmaking requests asynchronously.
+        /// </summary>
         public async void Start()
         {
             _listener.Start();
@@ -70,6 +90,9 @@ namespace OwlTree.Matchmaking
             _listener.Close();
         }
 
+        /// <summary>
+        /// Close the endpoint.
+        /// </summary>
         public void Close()
         {
             IsActive = false;
