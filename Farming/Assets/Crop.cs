@@ -73,14 +73,14 @@ public class CropNetcode : NetworkObject
             RequestCrop();
     }
 
-    [Rpc(RpcCaller.Client)]
-    public virtual void RequestCrop([RpcCaller] ClientId caller = default)
+    [Rpc(RpcPerms.ClientsToAuthority)]
+    public virtual void RequestCrop([CallerId] ClientId caller = default)
     {
         SendCropId(caller, crop.NetObject.Id, crop.Growth);
     }
 
-    [Rpc(RpcCaller.Server)]
-    public virtual void SendCropId([RpcCallee] ClientId callee, GameObjectId id, float growth)
+    [Rpc(RpcPerms.AuthorityToClients)]
+    public virtual void SendCropId([CalleeId] ClientId callee, GameObjectId id, float growth)
     {
         Connection.WaitForObject<GameObjectId, NetworkGameObject>(id, (obj) => {
             crop = obj.GetComponent<Crop>();
@@ -89,7 +89,7 @@ public class CropNetcode : NetworkObject
         });
     }
 
-    [Rpc(RpcCaller.Server, RpcProtocol = Protocol.Udp)]
+    [Rpc(RpcPerms.AuthorityToClients, RpcProtocol = Protocol.Udp)]
     public virtual void SendGrowth(float growth)
     {
         if (crop == null)

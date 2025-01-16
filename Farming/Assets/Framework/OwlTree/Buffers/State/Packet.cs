@@ -395,7 +395,7 @@ namespace OwlTree
             
             var len = BitConverter.ToInt32(bytes.Slice(_start));
 
-            if (len == 0 || _start + 4 + len > bytes.Length)
+            if (len == 0 || _start + len > bytes.Length)
                 return false;
             
             message = bytes.Slice(_start + 4, len);

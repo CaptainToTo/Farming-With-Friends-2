@@ -90,21 +90,21 @@ public class PlayerManagerNetcode : NetworkObject
             RequestManagerId(Connection.LocalId);
     }
 
-    [Rpc(RpcCaller.Client)]
-    public virtual void RequestManagerId([RpcCaller] ClientId caller = default)
+    [Rpc(RpcPerms.ClientsToAuthority)]
+    public virtual void RequestManagerId([CallerId] ClientId caller = default)
     {
         AttachToManager(caller, manager.NetObject.Id);
     }
 
-    [Rpc(RpcCaller.Client)]
-    public virtual void RequestPlayers([RpcCaller] ClientId caller = default)
+    [Rpc(RpcPerms.ClientsToAuthority)]
+    public virtual void RequestPlayers([CallerId] ClientId caller = default)
     {
         foreach (var pair in manager.Players)
             AttachPlayerNetcode(pair.Key, pair.Value.NetObject.Id, pair.Value.netcode.Id);
     }
 
-    [Rpc(RpcCaller.Server)]
-    public virtual void AttachToManager([RpcCallee] ClientId callee, GameObjectId id)
+    [Rpc(RpcPerms.AuthorityToClients)]
+    public virtual void AttachToManager([CalleeId] ClientId callee, GameObjectId id)
     {
         Connection.WaitForObject<GameObjectId, NetworkGameObject>(id, (obj) => {
             manager = obj.GetComponent<PlayerManager>();
@@ -113,14 +113,14 @@ public class PlayerManagerNetcode : NetworkObject
         });
     }
 
-    [Rpc(RpcCaller.Server)]
+    [Rpc(RpcPerms.AuthorityToClients)]
     public virtual void AttachPlayerNetcode(ClientId player, GameObjectId id, NetworkId netcodeId)
     {
         Connection.WaitForObject(netcodeId, (netcodeObj) => {
             if (manager?.HasPlayer(player) ?? true)
                 return;
             var netcode = (NetworkStateMachine)netcodeObj;
-            Connection.TryGetObject(id, out NetworkGameObject obj);
+            Connection.Maps.TryGet(id, out NetworkGameObject obj);
             var playerObj = obj.GetComponent<Player>();
             playerObj.SetNetcode(netcode, player);
             manager.CachePlayer(player, playerObj);

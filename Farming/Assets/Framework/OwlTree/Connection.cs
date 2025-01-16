@@ -11,33 +11,33 @@ using System.Threading;
 namespace OwlTree
 {
     /// <summary>
+    /// Determines the responsibilities and capabilities a Connection will have.
+    /// </summary>
+    public enum NetRole
+    {
+        /// <summary>
+        /// The Connection is a Server, it will manage client connections, and act as the state authority.
+        /// </summary>
+        Server,
+        /// <summary>
+        /// The Connection is a Client, it will attempt to connect to a server, and will not have state authority.
+        /// </summary>
+        Client,
+        /// <summary>
+        /// The Connection is a Host Client, it will attempt to connect to a server, and will act as the state authority.
+        /// </summary>
+        Host,
+        /// <summary>
+        /// The Connection is Relay Server, it will manage client connections, and pass RPCs between host and clients.
+        /// </summary>
+        Relay
+    }
+
+    /// <summary>
     /// Primary interface for OwlTree server-client connections. 
     /// </summary>
     public class Connection
     {
-        /// <summary>
-        /// Determines the responsibilities and capabilities a Connection will have.
-        /// </summary>
-        public enum Role
-        {
-            /// <summary>
-            /// The Connection is a Server, it will manage client connections, and act as the state authority.
-            /// </summary>
-            Server,
-            /// <summary>
-            /// The Connection is a Client, it will attempt to connect to a server, and will not have state authority.
-            /// </summary>
-            Client,
-            /// <summary>
-            /// The Connection is a Host Client, it will attempt to connect to a server, and will act as the state authority.
-            /// </summary>
-            Host,
-            /// <summary>
-            /// The Connection is Relay Server, it will manage client connections, and pass RPCs between host and clients.
-            /// </summary>
-            Relay
-        }
-
         /// <summary>
         /// Initialization arguments for building a new connection.
         /// </summary>
@@ -48,7 +48,7 @@ namespace OwlTree
             /// <summary>
             /// Whether this connection is a server or client.<b>Default = Server</b>
             /// </summary>
-            public Role role = Role.Server;
+            public NetRole role = NetRole.Server;
             /// <summary>
             /// The server IP address. <b>Default = localhost</b>
             /// </summary>
@@ -60,7 +60,7 @@ namespace OwlTree
             /// <summary>
             /// The port the server will listen to for UDP packets. <b>Default = 9000</b>
             /// </summary>
-            public int serverUdpPort = 9000;
+            public int udpPort = 9000;
             /// <summary>
             /// The maximum number of clients the server will allow to be connected at once.
             /// <b>Default = 4</b>
@@ -80,7 +80,7 @@ namespace OwlTree
             public bool migratable = false;
             /// <summary>
             /// Whether or not to automatically shutdown a relay connection if it becomes empty after
-            /// the host disconnects. If false, then the relay must also allow host migration. This is 
+            /// all clients disconnect. If false, then the relay must also allow host migration. This is 
             /// controlled with the <c>migratable</c> argument, and will be set to true for you.
             /// <b>Default = true</b>
             /// </summary>
@@ -145,14 +145,31 @@ namespace OwlTree
             /// A unique, max 64 ASCII character id used for simple client verification. <b>Default = "MyOwlTreeApp"</b>
             /// </summary>
             public string appId = "MyOwlTreeApp";
+            
+            /// <summary>
+            /// A unique, max 64 ASCII character id used to distinguish different sessions of the same app. <b>Default = "MyAppSession"</b>
+            /// </summary>
+            public string sessionId = "MyAppSession";
 
             // buffer transformers
 
             /// <summary>
-            /// Add custom transformers that will be apply to data read from sockets. Steps will be sorted by priority, least to greatest,
+            /// Records how much data is being send and received. Adds a read step with a priority of 0, and a send step with a priority of 200.
+            /// <b>Default = false</b>
+            /// </summary>
+            public bool measureBandwidth = false;
+
+            /// <summary>
+            /// A callback to output bandwidth recordings.
+            /// <b>Default = logger</b>
+            /// </summary>
+            public Action<Bandwidth> bandwidthReporter = null;
+
+            /// <summary>
+            /// Add custom transformers that will be apply to data received from sockets. Steps will be sorted by priority, least to greatest,
             /// and executed in that order. <b>Default = None</b>
             /// </summary>
-            public NetworkBuffer.Transformer[] readSteps = new NetworkBuffer.Transformer[0];
+            public NetworkBuffer.Transformer[] recvSteps = new NetworkBuffer.Transformer[0];
 
             /// <summary>
             /// Add custom transformers that will be apply to data sent to sockets. Steps will be sorted by priority, least to greatest,
@@ -165,32 +182,20 @@ namespace OwlTree
             /// </summary>
             public bool useCompression = true;
 
-            /// <summary>
-            /// Records how much data is being send and received. Adds a read step with a priority of 0, and a send step with a priority of 200.
-            /// <b>Default = false</b>
-            /// </summary>
-            public bool measureBandwidth = false;
-
-            /// <summary>
-            /// A callback to output bandwidth recordings.
-            /// <b>Default = printer</b>
-            /// </summary>
-            public Action<Bandwidth> bandwidthReporter = null;
-
             // threaded buffer
 
             /// <summary>
-            /// If false, Reading and writing to sockets will need to called by your program with <c>Read()</c>
+            /// If false, sending and receiving will need to be called by your program with <c>Recv()</c>
             /// and <c>Send()</c>. These operations will be done synchronously.
             /// <br /><br />
-            /// If true <b>(Default)</b>, reading and writing will be handled autonomously in a separate, dedicated thread. 
-            /// Reading will fill a queue of RPCs to be executed in the main program thread by calling <c>ExecuteQueue()</c>.
-            /// Reading and writing will be done at a regular frequency, as defined by the <c>threadUpdateDelta</c> arg.
+            /// If true <b>(Default)</b>, sending and receiving will be handled autonomously in a separate, dedicated thread. 
+            /// Receiving will fill a queue of RPCs to be executed in the main program thread by calling <c>ExecuteQueue()</c>.
+            /// Sending and receiving will be done at a regular frequency, as defined by the <c>threadUpdateDelta</c> arg.
             /// </summary>
             public bool threaded = true;
 
             /// <summary>
-            /// If the connection is threaded, specify the number of milliseconds the read/write thread will spend sleeping
+            /// If the connection is threaded, specify the number of milliseconds the send/recv thread will spend sleeping
             /// between updates. <b>Default = 40 (25 ticks/sec)</b>
             /// </summary>
             public int threadUpdateDelta = 40;
@@ -200,7 +205,7 @@ namespace OwlTree
             /// <summary>
             /// Inject a function for outputting logs from the connection. <b>Default = Console.WriteLine</b>
             /// </summary>
-            public Logger.Printer printer = Console.WriteLine;
+            public Logger.Writer logger = Console.WriteLine;
 
             /// <summary>
             /// Specify what information will get logged. <b>Default = None</b>
@@ -211,19 +216,19 @@ namespace OwlTree
         }
 
         /// <summary>
-        /// Create a new connection. Server instances will be immediately ready. 
-        /// Clients will require an initial <c>StartConnection()</c> call.
+        /// Create a new connection. Provide a <c>Connection.Args</c> instance to configure this connection.
+        /// Once the connection ends, it cannot be reused.
         /// </summary>
         public Connection(Args args)
         {
             NetRole = args.role;
 
-            _logger = new Logger(args.printer, args.verbosity);
+            _logger = new Logger(args.logger, args.verbosity);
 
             Protocols = IsRelay ? null : RpcProtocols.GetProjectImplementation();
 
-            if (Protocols == null)
-                    _logger.Write("WARNING: No project RPC protocols found. Ensure the OwlTree source generator is included in your project properly.");
+            if (Protocols == null && !IsRelay)
+                _logger.Write("WARNING: No project RPC protocols found. Ensure the OwlTree source generator is included in your project properly.");
 
             if (Protocols != null && _logger.includes.allRpcProtocols)
                 _logger.Write(Protocols.GetAllProtocolSummaries());
@@ -234,9 +239,10 @@ namespace OwlTree
                 appVer = args.appVersion,
                 minAppVer = args.minAppVersion,
                 appId = args.appId,
+                sessionId = args.sessionId,
                 addr = args.serverAddr,
-                tcpPort = args.tcpPort,
-                serverUdpPort = args.serverUdpPort,
+                serverTcpPort = args.tcpPort,
+                serverUdpPort = args.udpPort,
                 bufferSize = args.bufferSize,
                 encoder = EncodeRpc,
                 decoder = TryDecodeRpc,
@@ -245,16 +251,16 @@ namespace OwlTree
 
             switch (args.role)
             {
-                case Role.Server:
+                case NetRole.Server:
                     _buffer = new ServerBuffer(bufferArgs, args.maxClients, args.connectionRequestTimeout, args.whitelist);
                     IsReady = true;
                     break;
-                case Role.Relay:
+                case NetRole.Relay:
                     _buffer = new RelayBuffer(bufferArgs, args.maxClients, args.connectionRequestTimeout, args.hostAddr, args.migratable, args.shutdownWhenEmpty, args.whitelist);
                     IsReady = true;
                     break;
-                case Role.Client:
-                case Role.Host:
+                case NetRole.Client:
+                case NetRole.Host:
                     _buffer = new ClientBuffer(bufferArgs, args.connectionRequestRate, args.connectionRequestLimit, IsHost);
                     IsReady = false;
                     break;
@@ -293,7 +299,6 @@ namespace OwlTree
                 priority = 100,
                 step = Huffman.Decode
             });
-
             if (args.useCompression)
             {
                 _buffer.AddSendStep(new NetworkBuffer.Transformer{
@@ -306,8 +311,8 @@ namespace OwlTree
             {
                 Bandwidth = new Bandwidth(args.bandwidthReporter == null ? (b) => {
                     var str = $"Bandwidth report at {DateTimeOffset.Now.ToUnixTimeMilliseconds()}:\n";
-                    str += $"   Incoming: {b.IncomingKbPerSecond()} Kib/s\n";
-                    str += $"   Outgoing: {b.OutgoingKbPerSecond()} Kib/s";
+                    str += $"   Incoming: {b.IncomingKbPerSecond()} KB/s\n";
+                    str += $"   Outgoing: {b.OutgoingKbPerSecond()} KB/s";
                     _logger.Write(str);
                 } : args.bandwidthReporter);
 
@@ -322,7 +327,7 @@ namespace OwlTree
                 });
             }
 
-            foreach (var step in args.readSteps)
+            foreach (var step in args.recvSteps)
             {
                 _buffer.AddReadStep(step);
             }
@@ -348,26 +353,39 @@ namespace OwlTree
 
         private Logger _logger;
 
+        /// <summary>
+        /// Uses this connection's logger to output a message.
+        /// </summary>
         public void Log(string message) => _logger.Write(message);
 
+        /// <summary>
+        /// Access bandwidth data about this connection. If <c>measureBandwidth</c>
+        /// was not enabled during configuration, then this will be null.
+        /// </summary>
         public Bandwidth Bandwidth { get; private set; } = null;
 
         private Thread _bufferThread = null;
 
+        /// <summary>
+        /// Whether or not this connection is using a send/recv thread.
+        /// </summary>
         public bool Threaded { get; private set; } = false;
         private int _threadUpdateDelta = 40;
 
+        // run by send/recv thread
         private void NetworkLoop()
         {
+            // try to connect if client
             while (!_buffer.IsReady)
             {
-                _buffer.Read();
+                _buffer.Recv();
                 Thread.Sleep(_threadUpdateDelta);
             }
+            // recv and send until this connection ends
             while (_buffer.IsActive)
             {
                 long start = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
-                _buffer.Read();
+                _buffer.Recv();
 
                 if (!IsClient)
                 {
@@ -396,27 +414,53 @@ namespace OwlTree
         /// <summary>
         /// Whether this connection represents a server or client.
         /// </summary>
-        public Role NetRole { get; private set; }
+        public NetRole NetRole { get; private set; }
 
         /// <summary>
         /// Returns true if this connection is configured to be a server.
         /// </summary>
-        public bool IsServer { get => NetRole == Role.Server; }
+        public bool IsServer => NetRole == NetRole.Server; 
 
         /// <summary>
         /// Returns true if this connection is configured to be a client.
         /// </summary>
-        public bool IsClient { get => NetRole == Role.Client; }
+        public bool IsClient => NetRole == NetRole.Client; 
 
         /// <summary>
         /// Returns true if this connection is configured to be a host client.
         /// </summary>
-        public bool IsHost { get => NetRole == Role.Host; }
+        public bool IsHost => NetRole == NetRole.Host; 
 
         /// <summary>
         /// Returns true if this connection is configured to be a relay server.
         /// </summary>
-        public bool IsRelay { get => NetRole == Role.Relay; }
+        public bool IsRelay => NetRole == NetRole.Relay; 
+
+        /// <summary>
+        /// The TCP port the server connection managing this session is listening to.
+        /// </summary>
+        public int ServerTcpPort => _buffer.ServerTcpPort;
+        /// <summary>
+        /// The UDP port this server connection managing this session is listening to.
+        /// </summary>
+        public int ServerUdpPort => _buffer.ServerUdpPort;
+        /// <summary>
+        /// The local TCP port this connection is listening to.
+        /// </summary>
+        public int LocalTcpPort => _buffer.LocalTcpPort();
+        /// <summary>
+        /// The local UDP port this connection is listening to.
+        /// </summary>
+        public int LocalUdpPort => _buffer.LocalUdpPort();
+
+        /// <summary>
+        /// The app this connection is associated with.
+        /// </summary>
+        public StringId AppId => _buffer.ApplicationId;
+        /// <summary>
+        /// The session this connection is associated with.
+        /// </summary>
+        public StringId SessionId => _buffer.SessionId;
 
         private NetworkBuffer _buffer;
 
@@ -440,12 +484,18 @@ namespace OwlTree
         public int ClientCount => _clients.Count;
 
         /// <summary>
-        /// Iterable of all connected clients.
+        /// The maximum number of clients allowed to be connected at once in this session.
+        /// This value will not be accurate on clients until the connection is ready.
         /// </summary>
-        public IEnumerable<ClientId> Clients { get { return _clients; } }
+        public int MaxClients => _buffer.MaxClients;
 
         /// <summary>
-        /// Returns true if the given client id currently exists on this connection.
+        /// Iterable of all connected clients.
+        /// </summary>
+        public IEnumerable<ClientId> Clients => _clients;
+
+        /// <summary>
+        /// Returns true if the given client id currently exists in this session.
         /// </summary>
         public bool ContainsClient(ClientId id) => _clients.Contains(id);
 
@@ -476,19 +526,21 @@ namespace OwlTree
         public event ClientId.Delegate OnHostMigration;
 
         /// <summary>
-        /// Whether this connection is active. Will be false for clients if they have been disconnected from the server.
+        /// Whether this connection is active. Will be false for clients if 
+        /// they have been disconnected from the server.
         /// </summary>
         public bool IsActive { get; private set; } = false;
 
         /// <summary>
-        /// Whether this connection has established a link to the server. This is true for clients once they've been assigned a local id.
+        /// Whether this connection has established a link to the server. 
+        /// This is true for clients once they've been assigned a local id.
         /// </summary>
         public bool IsReady { get; private set; } = false;
 
         /// <summary>
-        /// The client id assigned to this local instance. Servers will have a LocalId of <c>ClientId.None</c>
+        /// The client id assigned to this local instance. Servers will have a LocalId of <c>ClientId.None</c>.
         /// </summary>
-        public ClientId LocalId { get { return IsReady ? _buffer.LocalId : ClientId.None; } }
+        public ClientId LocalId => IsReady ? _buffer.LocalId : ClientId.None;
 
         /// <summary>
         /// the client id of the instance assigned as the authority of the session. 
@@ -499,26 +551,29 @@ namespace OwlTree
         /// <summary>
         /// Returns true if the local connection is the authority of this session.
         /// </summary>
-        public bool IsAuthority { get { return !IsRelay && IsReady && _buffer.LocalId == _buffer.Authority; } }
+        public bool IsAuthority => !IsRelay && _buffer.LocalId == _buffer.Authority;
 
         /// <summary>
         /// Returns true if the current session supports host migration.
+        /// This can only be the case for relayed sessions.
         /// </summary>
-        public bool Migratable { get { return IsRelay ? ((RelayBuffer)_buffer).Migratable : false; } }
+        public bool Migratable => IsRelay ? ((RelayBuffer)_buffer).Migratable : false;
 
         /// <summary>
-        /// Receive any RPCs that have been sent to this connection. Execute them with <c>ExecuteQueue()</c>.
+        /// Receive any packets that have been sent to this connection. Execute them with <c>ExecuteQueue()</c>.
+        /// This can only be called on non-threaded connections.
         /// </summary>
-        public void Read()
+        public void Recv()
         {
             if (Threaded)
                 throw new InvalidOperationException("Cannot perform read operation on a threaded connection. This is handled for you in a dedicated thread.");
             if (IsActive)
-                _buffer.Read();
+                _buffer.Recv();
         }
 
         /// <summary>
         /// Block until the connection is ready.
+        /// This can only be called on non-threaded connections.
         /// </summary>
         public void AwaitConnection()
         {
@@ -526,18 +581,18 @@ namespace OwlTree
                 throw new InvalidOperationException("Cannot perform await connection operation on a threaded connection. This is handled for you in a dedicated thread.");
             while (!_buffer.IsReady)
             {
-                _buffer.Read();
+                _buffer.Recv();
                 Thread.Sleep(_threadUpdateDelta);
             }
         }
 
-        internal bool GetNextMessage(out NetworkBuffer.Message message)
+        internal bool GetNextMessage(out Message message)
         {
             return _buffer.GetNextMessage(out message);
         }
 
         /// <summary>
-        /// Execute any RPCs that have been received in the last <c>Read()</c>.
+        /// Execute any RPCs that have been received in the last <c>Recv()</c> call.
         /// </summary>
         public void ExecuteQueue()
         {
@@ -590,13 +645,13 @@ namespace OwlTree
                             _logger.Write($"Connection is ready. Local client id is: {LocalId}, authority id is: {Authority}");
                         if (LocalId == Authority && IsClient)
                         {
-                            NetRole = Role.Host;
+                            NetRole = NetRole.Host;
                             if (_logger.includes.clientEvents)
                                 _logger.Write("Local client assigned as host, this connection now has authority privileges.");
                         }
                         else if (LocalId != Authority && IsHost)
                         {
-                            NetRole = Role.Client;
+                            NetRole = NetRole.Client;
                             if (_logger.includes.clientEvents)
                                 _logger.Write("Local connection requested to be host, but has been downgraded to client. Authority privileges removed.");
                         }
@@ -605,10 +660,10 @@ namespace OwlTree
                         break;
                     case ConnectionEventType.OnHostMigration:
                         Authority = result.id;
-                        if (NetRole == Role.Host && Authority != LocalId)
-                            NetRole = Role.Client;
-                        if (NetRole != Role.Relay && result.id == LocalId)
-                            NetRole = Role.Host;
+                        if (NetRole == NetRole.Host && Authority != LocalId)
+                            NetRole = NetRole.Client;
+                        if (NetRole != NetRole.Relay && result.id == LocalId)
+                            NetRole = NetRole.Host;
                         if (_logger.includes.clientEvents)
                             _logger.Write("Host migrated, new authority is: " + result.id.ToString());
                         OnHostMigration?.Invoke(result.id);
@@ -616,14 +671,15 @@ namespace OwlTree
                 }
             }
 
+            // if local connection was disconnected in a client event received, exit
             if (!IsActive)
                 return;
 
             while (GetNextMessage(out var message))
             {
                 if (
-                    NetRole == Role.Client && 
-                    (message.rpcId == RpcId.NETWORK_OBJECT_SPAWN || message.rpcId == RpcId.NETWORK_OBJECT_DESPAWN)
+                    NetRole == NetRole.Client && 
+                    (message.rpcId == RpcId.NetworkObjectSpawnId || message.rpcId == RpcId.NetworkObjectDespawnId)
                 )
                 {
                     try
@@ -633,10 +689,10 @@ namespace OwlTree
                     catch (Exception e)
                     {
                         if (_logger.includes.exceptions)
-                            _logger.Write($"FAILED to run {(message.rpcId == RpcId.NETWORK_OBJECT_SPAWN ? "spawn" : "despawn")} instruction. Exception thrown:\n   {e}");
+                            _logger.Write($"Failed to run {(message.rpcId == RpcId.NetworkObjectSpawnId ? "spawn" : "despawn")} instruction. Exception thrown:\n   {e}");
                     }
                 }
-                else if (message.rpcId == RpcId.PING_REQUEST)
+                else if (message.rpcId == RpcId.PingRequestId)
                 {
                     var request = (PingRequest)message.args[0];
                     request.PingResolved();
@@ -650,10 +706,7 @@ namespace OwlTree
                     catch (Exception e)
                     {
                         if (_logger.includes.exceptions)
-                        {
-                            var call = Protocols.GetEncodingSummary(message.rpcId, message.caller, message.callee, message.target, message.args);
-                            _logger.Write($"FAILED to run RPC {(Protocols?.GetRpcName(message.rpcId) ?? "Unknown")} {message.rpcId} on network object: {message.target}.\n\nEncoding Summary:\n{call}\nException thrown:\n   {e}");
-                        }
+                            _logger.Write($"Failed to run RPC {(Protocols?.GetRpcName(message.rpcId) ?? "Unknown")} {message.rpcId} on network object: {message.target}. Exception thrown:\n   {e}");
                     }
                 }
             }
@@ -675,15 +728,15 @@ namespace OwlTree
             }
         }
 
-        private bool TryDecodeRpc(ClientId source, ReadOnlySpan<byte> bytes, out NetworkBuffer.Message message)
+        private bool TryDecodeRpc(ClientId source, ReadOnlySpan<byte> bytes, out Message message)
         {
-            message = NetworkBuffer.Message.Empty;
-            if (NetRole != Role.Server && NetworkSpawner.TryDecode(bytes, out var rpcId, out var args))
+            message = Message.Empty;
+            if (NetRole != NetRole.Server && NetworkSpawner.TryDecode(bytes, out var rpcId, out var args))
             {
-                message = new NetworkBuffer.Message(LocalId, rpcId, args);
+                message = new Message(LocalId, rpcId, args);
                 if (_logger.includes.rpcReceiveEncodings)
                 {
-                    if (rpcId.Id == RpcId.NETWORK_OBJECT_SPAWN)
+                    if (rpcId.Id == RpcId.NetworkObjectSpawnId)
                         _logger.Write("RECEIVING:\n" + _spawner.SpawnEncodingSummary((byte)message.args[0], (NetworkId)message.args[1]));
                     else
                         _logger.Write("RECEIVING:\n" + _spawner.DespawnEncodingSummary((NetworkId)args[0]));
@@ -692,20 +745,49 @@ namespace OwlTree
             }
             else if (Protocols != null && Protocols.TryDecodeRpc(bytes, out rpcId, out var caller, out var callee, out var target, out args))
             {
-                message = new NetworkBuffer.Message(caller, callee, rpcId, target, Protocol.Tcp, args);
+                message = new Message(caller, callee, rpcId, target, Protocols.GetSendProtocol(rpcId), Protocols.GetRpcPerms(rpcId), args);
                 if (_logger.includes.rpcReceives)
                 {
-                    var output = $"RECEIVING:\n{Protocols.GetRpcName(rpcId.Id)} {rpcId}, Called on Object {target}";
+                    var output = $"RECEIVING:\n{Protocols.GetRpcName(rpcId.Id)} {rpcId}, called on object {target}";
                     if (_logger.includes.rpcReceiveEncodings)
                         output += ":\n" + Protocols.GetEncodingSummary(rpcId, caller, callee, target, args);
                     _logger.Write(output);
                 }
-                return true;
+
+                // clients do not relay
+                if (IsClient || IsHost)
+                    return true;
+
+                // non-relay servers can either receive RPCs
+                if (message.perms == RpcPerms.ClientsToAuthority)
+                {
+                    return true;
+                }
+                // or relay them between clients
+                else if (message.perms == RpcPerms.ClientsToClients)
+                {
+                    _buffer.AddMessage(message);
+                }
+                else if (message.perms == RpcPerms.ClientsToAll || message.perms == RpcPerms.AnyToAll)
+                {
+                    if (Protocols.HasCalleeIdParam(message.rpcId))
+                    {
+                        if (message.callee == LocalId) // an RPC w/ a callee id param can target the server with ClientId.None
+                            return true;
+                        else // otherwise relay to the intended client
+                            _buffer.AddMessage(message);
+                    }
+                    // otherwise the RPC should be run on the server, and sent to all other clients
+                    var relayedMessage = new Message(caller, callee, rpcId, target, Protocols.GetSendProtocol(rpcId), Protocols.GetRpcPerms(rpcId));
+                    relayedMessage.bytes = bytes.ToArray();
+                    _buffer.AddMessage(relayedMessage);
+                    return true;
+                }
             }
             return false;
         }
 
-        private void EncodeRpc(NetworkBuffer.Message message, Packet buffer)
+        private void EncodeRpc(Message message, Packet buffer)
         {
             // add locally called rpc to packet
             if (message.bytes != null)
@@ -717,73 +799,40 @@ namespace OwlTree
                 }
             }
             // relaying client to client rpc
-            else
+            else if (message.rpcId >= RpcId.FirstRpcId)
             {
-                if (message.rpcId == RpcId.NETWORK_OBJECT_SPAWN)
+                try
                 {
-                    try
+                    var bytes = buffer.GetSpan(Protocols.GetRpcByteLength(message.rpcId, message.args));
+                    Protocols.EncodeRpc(bytes, message.rpcId, message.caller, message.callee, message.target, message.args);
+                    if (_logger.includes.rpcCalls)
                     {
-                        var bytes = buffer.GetSpan(NetworkSpawner.SpawnByteLength);
-                        _spawner.SpawnEncode(bytes, (Type)message.args[0], (NetworkId)message.args[1]);
+                        var output = $"RELAYING:\n{Protocols.GetRpcName(message.rpcId.Id)} {message.rpcId}, called on object {message.target}";
                         if (_logger.includes.rpcCallEncodings)
-                            _logger.Write("RELAYING:\n" + _spawner.SpawnEncodingSummary((Type)message.args[0], (NetworkId)message.args[1]));
-                    }
-                    catch (Exception e)
-                    {
-                        if (_logger.includes.exceptions)
-                            _logger.Write($"FAILED to relay spawn instruction from {message.caller}. Thrown exception:\n{e}");
+                            output += ":\n" + Protocols.GetEncodingSummary(message.rpcId, message.caller, message.callee, message.target, message.args);
+                        _logger.Write(output);
                     }
                 }
-                else if (message.rpcId == RpcId.NETWORK_OBJECT_DESPAWN)
+                catch (Exception e)
                 {
-                    try
-                    {
-                        var bytes = buffer.GetSpan(NetworkSpawner.DespawnByteLength);
-                        _spawner.DespawnEncode(bytes, (NetworkId)message.args[0]);
-                        if (_logger.includes.rpcCallEncodings)
-                            _logger.Write("RELAYING:\n" + _spawner.DespawnEncodingSummary((NetworkId)message.args[0]));
-                    }
-                    catch (Exception e)
-                    {
-                        if (_logger.includes.exceptions)
-                            _logger.Write($"FAILED to relay despawn instruction from {message.caller}. Thrown exception:\n{e}");
-                    }
-                }
-                else
-                {
-                    try
-                    {
-                        var bytes = buffer.GetSpan(Protocols.GetRpcByteLength(message.rpcId, message.args));
-                        Protocols.EncodeRpc(bytes, message.rpcId, message.caller, message.callee, message.target, message.args);
-                        if (_logger.includes.rpcCalls)
-                        {
-                            var output = $"RELAYING:\n{Protocols.GetRpcName(message.rpcId.Id)} {message.rpcId}, Called on Object {message.target}";
-                            if (_logger.includes.rpcCallEncodings)
-                                output += ":\n" + Protocols.GetEncodingSummary(message.rpcId, message.caller, message.callee, message.target, message.args);
-                            _logger.Write(output);
-                        }
-                    }
-                    catch (Exception e)
-                    {
-                        if (_logger.includes.exceptions)
-                            _logger.Write($"FAILED to relay RPC from {message.caller}, sending to {message.callee}. Thrown exception:\n{e}");
-                    }
+                    if (_logger.includes.exceptions)
+                        _logger.Write($"FAILED to relay RPC from {message.caller}, sending to {message.callee}. Thrown exception:\n{e}");
                 }
             }
         }
 
         internal void AddRpc(ClientId callee, RpcId rpcId, NetworkId target, Protocol protocol, object[] args)
         {
-            var message = new NetworkBuffer.Message(LocalId, callee, rpcId, target, protocol);
-
-            if (message.rpcId == RpcId.NETWORK_OBJECT_SPAWN)
+            if (rpcId == RpcId.NetworkObjectSpawnId)
             {
                 try
                 {
+                    var message = new Message(LocalId, callee, rpcId, target, protocol, RpcPerms.AuthorityToClients);
                     message.bytes = new byte[NetworkSpawner.SpawnByteLength];
                     _spawner.SpawnEncode(message.bytes, (Type)args[0], (NetworkId)args[1]);
                     if (_logger.includes.rpcCallEncodings)
                         _logger.Write("SENDING:\n" + _spawner.SpawnEncodingSummary((Type)args[0], (NetworkId)args[1]));
+                    _buffer.AddMessage(message);
                 }
                 catch (Exception e)
                 {
@@ -792,14 +841,16 @@ namespace OwlTree
                     return;
                 }
             }
-            else if (message.rpcId == RpcId.NETWORK_OBJECT_DESPAWN)
+            else if (rpcId == RpcId.NetworkObjectDespawnId)
             {
                 try
                 {
+                    var message = new Message(LocalId, callee, rpcId, target, protocol, RpcPerms.AuthorityToClients);
                     message.bytes = new byte[NetworkSpawner.DespawnByteLength];
                     _spawner.DespawnEncode(message.bytes, (NetworkId)args[0]);
                     if (_logger.includes.rpcCallEncodings)
                         _logger.Write("SENDING:\n" + _spawner.DespawnEncodingSummary((NetworkId)args[0]));
+                    _buffer.AddMessage(message);
                 }
                 catch (Exception e)
                 {
@@ -812,14 +863,24 @@ namespace OwlTree
             {
                 try
                 {
-                    message.bytes = new byte[Protocols.GetRpcByteLength(rpcId, args)];
-                    Protocols.EncodeRpc(message.bytes, rpcId, LocalId, callee, target, args);
-                    if (_logger.includes.rpcCalls)
+                    var perms = Protocols.GetRpcPerms(rpcId);
+                    switch (perms)
                     {
-                        var output = $"SENDING:\n{Protocols.GetRpcName(rpcId.Id)} {rpcId}, Called on Object {target}";
-                        if (_logger.includes.rpcCallEncodings)
-                            output += ":\n" + Protocols.GetEncodingSummary(rpcId, LocalId, callee, target, args);
-                        _logger.Write(output);
+                        case RpcPerms.ClientsToAuthority:
+                            AddRpcTo(Authority, rpcId, target, protocol, perms, args);
+                            break;
+                        case RpcPerms.ClientsToClients:
+                            if (Protocols.HasCalleeIdParam(rpcId))
+                                AddRpcTo(callee, rpcId, target, protocol, perms, args);
+                            else
+                                AddRpcTo(Clients.Where(c => c != LocalId), rpcId, target, protocol, perms, args);
+                            break;
+                        case RpcPerms.ClientsToAll:
+                        case RpcPerms.AuthorityToClients:
+                        case RpcPerms.AnyToAll:
+                        default:
+                            AddRpcTo(callee, rpcId, target, protocol, perms, args);
+                            break;
                     }
                 }
                 catch (Exception e)
@@ -834,8 +895,42 @@ namespace OwlTree
                     return;
                 }
             }
+        }
 
+        private void AddRpcTo(IEnumerable<ClientId> callees, RpcId rpcId, NetworkId target, Protocol protocol, RpcPerms perms, object[] args)
+        {
+            var bytes = new byte[Protocols.GetRpcByteLength(rpcId, args)];
+            Protocols.EncodeRpc(bytes, rpcId, LocalId, ClientId.None, target, args);
+            foreach (var callee in callees)
+            {
+                var message = new Message(LocalId, callee, rpcId, target, protocol, perms);
+                message.bytes = RpcEncoding.ChangeRpcCallee(bytes, callee);
+                _buffer.AddMessage(message);
+
+                if (_logger.includes.rpcCalls)
+                {
+                    var output = $"SENDING:\n{Protocols.GetRpcName(rpcId.Id)} {rpcId}, called on object {target}";
+                    if (_logger.includes.rpcCallEncodings)
+                        output += ":\n" + Protocols.GetEncodingSummary(rpcId, LocalId, callee, target, args);
+                    _logger.Write(output);
+                }
+            }
+        }
+
+        private void AddRpcTo(ClientId callee, RpcId rpcId, NetworkId target, Protocol protocol, RpcPerms perms, object[] args)
+        {
+            var message = new Message(LocalId, callee, rpcId, target, protocol, perms);
+            message.bytes = new byte[Protocols.GetRpcByteLength(rpcId, args)];
+            Protocols.EncodeRpc(message.bytes, rpcId, LocalId, callee, target, args);
             _buffer.AddMessage(message);
+
+            if (_logger.includes.rpcCalls)
+            {
+                var output = $"SENDING:\n{Protocols.GetRpcName(rpcId.Id)} {rpcId}, called on object {target}";
+                if (_logger.includes.rpcCallEncodings)
+                    output += ":\n" + Protocols.GetEncodingSummary(rpcId, LocalId, callee, target, args);
+                _logger.Write(output);
+            }
         }
 
         internal void AddRpc(ClientId callee, RpcId rpcId, Protocol protocol, object[] args)
@@ -849,7 +944,8 @@ namespace OwlTree
         }
 
         /// <summary>
-        /// Send current outgoing buffers.
+        /// Send current outgoing packets.
+        /// This can only be called on non-threaded connections.
         /// </summary>
         public void Send()
         {
@@ -899,6 +995,7 @@ namespace OwlTree
 
         /// <summary>
         /// Disconnect a specific client from the server.
+        /// This can only be called by the authority.
         /// </summary>
         public void Disconnect(ClientId id)
         {
@@ -910,10 +1007,16 @@ namespace OwlTree
                 _buffer.Disconnect(id);
         }
 
+        /// <summary>
+        /// Reassign the authority client (a.k.a. host) to a new client.
+        /// This can only be called by the authority.
+        /// </summary>
         public void MigrateHost(ClientId id)
         {
             if (IsClient)
                 throw new InvalidOperationException("Only the current host or the relay server can initiate a host migration.");
+            if (IsServer)
+                throw new InvalidOperationException("Server authoritative sessions cannot have authority migrated off of the server.");
             if (Threaded)
                 _clientRequests.Enqueue((ConnectionEventType.OnHostMigration, id));
             else
@@ -924,13 +1027,13 @@ namespace OwlTree
 
         /// <summary>
         /// Invoked when a new object is spawned. Provides the spawned object. 
-        /// Invoked after the object's OnSpawn() method has been called.
+        /// Invoked after the object's <c>OnSpawn()</c> method has been called.
         /// </summary>
         public event NetworkObject.Delegate OnObjectSpawn;
 
         /// <summary>
         /// Invoked when an object is despawned. Provides the "despawned" object, marked as not active.
-        /// Invoked after the object's OnDespawn() method has been called.
+        /// Invoked after the object's <c>OnDespawn()</c> method has been called.
         /// </summary>
         public event NetworkObject.Delegate OnObjectDespawn;
 
@@ -948,6 +1051,22 @@ namespace OwlTree
                 throw new InvalidOperationException("Relay servers do not manage any state beyond client connections, no network objects exist on this connection.");
             return _spawner.TryGetObject(id, out obj);
         }
+
+        /// <summary>
+        /// Try to get an object of the given type, with the give id. Returns true if one was found, false otherwise.
+        /// </summary>
+        public bool TryGetObject<T>(NetworkId id, out T objT) where T : NetworkObject
+        {
+            if (IsRelay)
+                throw new InvalidOperationException("Relay servers do not manage any state beyond client connections, no network objects exist on this connection.");
+            if (_spawner.TryGetObject(id, out var obj) && obj is T)
+            {
+                objT = (T)obj;
+                return true;
+            }
+            objT = null;
+            return false;
+        }
         
         /// <summary>
         /// Get an object with the given id. Returns null if none exist.
@@ -960,7 +1079,19 @@ namespace OwlTree
         }
 
         /// <summary>
+        /// Get an object with the given type and id. Returns null if none exists.
+        /// </summary>
+        public T GetNetworkObject<T>(NetworkId id) where T : NetworkObject
+        {
+            if (IsRelay)
+                throw new InvalidOperationException("Relay servers do not manage any state beyond client connections, no network objects exist on this connection.");
+            var obj = _spawner.GetNetworkObject(id);
+            return obj is T ? (T)obj : null;
+        }
+
+        /// <summary>
         /// Spawns a new instance of the given NetworkObject sub-type across all clients.
+        /// This can only be called by the authority.
         /// </summary>
         public T Spawn<T>() where T : NetworkObject, new()
         {
@@ -974,6 +1105,7 @@ namespace OwlTree
 
         /// <summary>
         /// Spawns a new instance of the given NetworkObject sub-type across all clients.
+        /// This can only be called by the authority.
         /// </summary>
         public NetworkObject Spawn(Type t)
         {
@@ -986,6 +1118,7 @@ namespace OwlTree
 
         /// <summary>
         /// Despawns the given NetworkObject across all clients.
+        /// This can only be called by the authority.
         /// </summary>
         public void Despawn(NetworkObject target)
         {
@@ -996,121 +1129,12 @@ namespace OwlTree
             _spawner.Despawn(target);
         }
 
-        private struct Pair
-        {
-            public Type k;
-            public Type v;
-
-            public Pair(Type k, Type v)
-            {
-                this.k = k;
-                this.v = v;
-            }
-
-            public static bool operator ==(Pair a, Pair b)
-            {
-                return a.k == b.k && a.v == b.v;
-            }
-
-            public static bool operator !=(Pair a, Pair b)
-            {
-                return a.k != b.k || a.v != b.v;
-            }
-
-            public override bool Equals(object obj) => obj != null && obj.GetType() == typeof(Pair) && (Pair)obj == this;
-            public override int GetHashCode() => base.GetHashCode();
-        }
-
-        private Dictionary<Pair, IDictionary> _objectMaps = new();
-
-        public void AddObjectMap<K, V>()
-        {
-            var pair = new Pair(typeof(K), typeof(V));
-            if (!_objectMaps.ContainsKey(pair))
-                _objectMaps.Add(pair, new Dictionary<K, V>());
-        }
-
-        public void AddObjectToMap<K, V>(K key, V val)
-        {
-            var pair = new Pair(typeof(K), typeof(V));
-            if (!_objectMaps.ContainsKey(pair))
-                throw new InvalidOperationException($"No map has pairing {typeof(K)}: {typeof(V)}");
-            _objectMaps[pair][key] = val;
-        }
-
-        public bool TryGetObject<K, V>(K key, out V val)
-        {
-            var pair = new Pair(typeof(K), typeof(V));
-            if (!_objectMaps.ContainsKey(pair) || !_objectMaps[pair].Contains(key))
-            {
-                val = default;
-                return false;
-            }
-            val = (V)_objectMaps[pair][key];
-            return true;
-        }
-
-        public bool TryGetObject(Type k, object key, out object val)
-        {
-            var map = _objectMaps.FirstOrDefault(m => m.Key.k == k).Value;
-            if (map == null || map.Contains(key))
-            {
-                val = default;
-                return false;
-            }
-            val = map[key];
-            return true;
-        }
-
-        public V GetObject<K, V>(K key)
-        {
-            var pair = new Pair(typeof(K), typeof(V));
-            if (!_objectMaps.ContainsKey(pair) || !_objectMaps[pair].Contains(key))
-                return default;
-            return (V)_objectMaps[pair][key];
-        }
-
-        public bool HasKey<K>(K key)
-        {
-            var t = typeof(K);
-            var map = _objectMaps.FirstOrDefault(m => m.Key.k == t).Value;
-            if (map == null)
-                return false;
-            return map.Contains(key);
-        }
-
-        public IEnumerable<V> GetObjects<K, V>()
-        {
-            var pair = new Pair(typeof(K), typeof(V));
-            if (!_objectMaps.ContainsKey(pair))
-                throw new ArgumentException($"No map has pairing {typeof(K)}: {typeof(V)}");
-            return _objectMaps[pair].Cast<KeyValuePair<K, V>>().Select(p => p.Value);
-        }
-
-        public void RemoveObject<K>(K key)
-        {
-            var t = typeof(K);
-            var map = _objectMaps.FirstOrDefault(m => m.Key.k == t).Value;
-            if (map == null)
-                return;
-            map.Remove(key);
-        }
-
-        public void ClearMap<K, V>()
-        {
-            var pair = new Pair(typeof(K), typeof(V));
-            if (!_objectMaps.ContainsKey(pair))
-                return;
-            _objectMaps[pair].Clear();
-        }
-
-        public void RemoveMap<K, V>()
-        {
-            var pair = new Pair(typeof(K), typeof(V));
-            if (!_objectMaps.ContainsKey(pair))
-                return;
-            _objectMaps.Remove(pair);
-        }
+        /// <summary>
+        /// Use to associate objects with key-value pairs, and make accessible to all
+        /// objects with a reference to this connection. This is not synchronized across clients.
+        /// Addons that use this may handle synchronization for you.
+        /// </summary>
+        public GenericObjectMaps Maps { get; private set; } = new();
 
         private interface ISearch
         {
@@ -1157,7 +1181,7 @@ namespace OwlTree
 
             public bool SearchForObject(Connection connection)
             {
-                if (connection.TryGetObject(id, out V obj))
+                if (connection.Maps.TryGet(id, out V obj))
                 {
                     callback.Invoke(obj);
                     return true;
@@ -1168,11 +1192,19 @@ namespace OwlTree
 
         private List<ISearch> _idSearches = new();
 
+        /// <summary>
+        /// Enqueue a callback that will wait for a NetworkObject with the given NetworkId
+        /// to exist.
+        /// </summary>
         public void WaitForObject(NetworkId id, Action<NetworkObject> callback)
         {
             _idSearches.Add(new NetSearch(id, callback));
         }
 
+        /// <summary>
+        /// Enqueue a callback that will wait for a given key to exist in this connection's
+        /// generic object maps.
+        /// </summary>
         public void WaitForObject<K, V>(K id, Action<V> callback)
         {
             _idSearches.Add(new IdSearch<K, V>(id, callback));

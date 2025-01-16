@@ -26,7 +26,7 @@ namespace OwlTree.Unity
         {
             _connection = connection;
 
-            var curId = PrefabId.FIRST_PREFAB_ID;
+            var curId = PrefabId.FirstPrefabId;
             foreach (var prefab in prefabs)
             {
                 _prefabs.Add(new PrefabId(curId), prefab);
@@ -77,7 +77,7 @@ namespace OwlTree.Unity
 
         public Action<NetworkGameObject> OnObjectDespawn;
 
-        private uint _curId = GameObjectId.FIRST_GAMEOBJECT_ID;
+        private uint _curId = GameObjectId.FirstGameObjectId;
         private GameObjectId NextGameObjectId()
         {
             var id = new GameObjectId(_curId);

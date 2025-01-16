@@ -25,7 +25,7 @@ public class UnityConnection : MonoBehaviour
 
     [SerializeField] private ConnectionArgs _args;
 
-    public UnityEvent<UnityConnection> OnAwake;
+    public UnityEvent<UnityConnection> OnStart;
 
     public UnityEvent<ClientId> OnReady;
     public UnityEvent<ClientId> OnClientConnected;
@@ -47,27 +47,18 @@ public class UnityConnection : MonoBehaviour
 
     void Awake()
     {
-        var args = new Connection.Args{
-            role = _args.isClient ? Connection.Role.Client : Connection.Role.Server,
-            appId = _args.appId,
-            serverAddr = _args.serverAddr,
-            tcpPort = _args.tcpPort,
-            serverUdpPort = _args.udpPort,
-            maxClients = _args.maxClients,
-            hostAddr = _args.hostAddr,
-            connectionRequestRate = _args.connectionRequestRate,
-            connectionRequestLimit = _args.connectionRequestLimit,
-            connectionRequestTimeout = _args.connectionRequestTimeout,
-            bufferSize = _args.bufferSize,
-            useCompression = _args.useCompression,
-            measureBandwidth = _args.measureBandwidth,
-            bandwidthReporter = (b) => OnBandwidthReport.Invoke(b),
-            threaded = _args.threaded,
-            threadUpdateDelta = _args.threadUpdateDelta,
-            printer = (str) => Debug.Log(str),
-            verbosity = Logger.Includes().ClientEvents().Exceptions().AllRpcProtocols().AllTypeIds()
-        };
+        _instances.Add(this);
+    }
 
+    void OnDestroy()
+    {
+        if (Connection.IsActive)
+            Connection.Disconnect();
+        _instances.Remove(this);
+    }
+
+    public void Connect(Connection.Args args)
+    {
         Connection = new Connection(args);
 
         Connection.OnClientConnected += (id) => OnClientConnected.Invoke(id);
@@ -83,9 +74,7 @@ public class UnityConnection : MonoBehaviour
 
         StartCoroutine(WaitForReady());
 
-        _instances.Add(this);
-
-        OnAwake?.Invoke(this);
+        OnStart?.Invoke(this);
     }
 
     private IEnumerator WaitForReady()
@@ -113,13 +102,6 @@ public class UnityConnection : MonoBehaviour
             yield return null;
         }
         OnReady?.Invoke(Connection.LocalId);
-    }
-
-    void OnDestroy()
-    {
-        if (Connection.IsActive)
-            Connection.Disconnect();
-        _instances.Remove(this);
     }
 
     void FixedUpdate()
@@ -158,7 +140,7 @@ public class UnityConnection : MonoBehaviour
 
     public bool Threaded => Connection.Threaded;
 
-    public Connection.Role NetRole => Connection.NetRole;
+    public NetRole NetRole => Connection.NetRole;
 
     public bool IsServer => Connection.IsServer;
 
@@ -168,7 +150,21 @@ public class UnityConnection : MonoBehaviour
 
     public bool IsRelay => Connection.IsRelay;
 
+    public int ServerTcpPort => Connection.ServerTcpPort;
+
+    public int ServerUdpPort => Connection.ServerUdpPort;
+
+    public int LocalTcpPort => Connection.LocalTcpPort;
+
+    public int LocalUdpPort => Connection.LocalUdpPort;
+
+    public StringId AppId => Connection.AppId;
+
+    public StringId SessionId => Connection.SessionId;
+
     public int ClientCount => Connection.ClientCount;
+
+    public int MaxClients => Connection.MaxClients;
 
     public IEnumerable<ClientId> Clients => Connection.Clients;
 
@@ -182,7 +178,7 @@ public class UnityConnection : MonoBehaviour
 
     public bool Migratable => Connection.Migratable;
 
-    public void Read() => Connection.Read();
+    public void Recv() => Connection.Recv();
 
     public void AwaitConnection() => Connection.AwaitConnection();
 
@@ -210,25 +206,7 @@ public class UnityConnection : MonoBehaviour
 
     public void Despawn(NetworkObject target) => Connection.Despawn(target);
 
-    public void AddObjectMap<K, V>() => Connection.AddObjectMap<K, V>();
-
-    public void AddObjectToMap<K, V>(K key, V val) => Connection.AddObjectToMap(key, val);
-
-    public bool TryGetObject<K, V>(K key, out V val) => Connection.TryGetObject(key, out val);
-
-    public bool TryGetObject(Type k, object key, out object val) => Connection.TryGetObject(k, key, out val);
-
-    public V GetObject<K, V>(K key) => Connection.GetObject<K, V>(key);
-
-    public bool HasKey<K>(K key) => Connection.HasKey(key);
-
-    public IEnumerable<V> GetObjects<K, V>() => Connection.GetObjects<K, V>();
-
-    public void RemoveObject<K>(K key) => Connection.RemoveObject(key);
-
-    public void ClearMap<K, V>() => Connection.ClearMap<K, V>();
-
-    public void RemoveMap<K, V>() => Connection.RemoveMap<K, V>();
+    public GenericObjectMaps Maps => Connection.Maps;
 
     public void WaitForObject(NetworkId id, Action<NetworkObject> callback) => Connection.WaitForObject(id, callback);
 

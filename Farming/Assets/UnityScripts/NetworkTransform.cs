@@ -82,20 +82,20 @@ namespace OwlTree.Unity
                 RequestTransform();
         }
 
-        [Rpc(RpcCaller.Server, InvokeOnCaller = true)]
+        [Rpc(RpcPerms.AuthorityToClients, InvokeOnCaller = true)]
         public virtual void SetAuthority(ClientId authority)
         {
             Authority = authority;
         }
 
-        [Rpc(RpcCaller.Client)]
-        public virtual void RequestTransform([RpcCaller] ClientId caller = default)
+        [Rpc(RpcPerms.ClientsToAuthority)]
+        public virtual void RequestTransform([CallerId] ClientId caller = default)
         {
             CacheTransform(caller, transform.NetObject.Id, Authority);
         }
 
-        [Rpc(RpcCaller.Server)]
-        public virtual void CacheTransform([RpcCallee] ClientId callee, GameObjectId id, ClientId authority)
+        [Rpc(RpcPerms.AuthorityToClients)]
+        public virtual void CacheTransform([CalleeId] ClientId callee, GameObjectId id, ClientId authority)
         {
             Authority = authority;
             Connection.WaitForObject<GameObjectId, NetworkGameObject>(id, (obj) => {
@@ -105,8 +105,8 @@ namespace OwlTree.Unity
             });
         }
 
-        [Rpc(RpcCaller.Any)]
-        public virtual void RequestState([RpcCallee] ClientId callee, [RpcCaller] ClientId caller = default)
+        [Rpc(RpcPerms.AnyToAll)]
+        public virtual void RequestState([CalleeId] ClientId callee, [CallerId] ClientId caller = default)
         {
             if (Connection.LocalId != Authority)
                 return;
@@ -128,8 +128,8 @@ namespace OwlTree.Unity
             SendState(caller, pos, rot, scale);
         }
 
-        [Rpc(RpcCaller.Any)]
-        public virtual void SendState([RpcCallee] ClientId callee, NetworkVec3 pos, NetworkVec4 rot, NetworkVec3 scale, [RpcCaller] ClientId caller = default)
+        [Rpc(RpcPerms.AnyToAll)]
+        public virtual void SendState([CalleeId] ClientId callee, NetworkVec3 pos, NetworkVec4 rot, NetworkVec3 scale, [CallerId] ClientId caller = default)
         {
             if (caller != Authority)
                 return;
@@ -143,8 +143,8 @@ namespace OwlTree.Unity
             transform.transform.localScale = new Vector3(scale.x, scale.y, scale.z);
         }
 
-        [Rpc(RpcCaller.Any, RpcProtocol = Protocol.Udp)]
-        public virtual void SendPosition(NetworkVec3 pos, [RpcCaller] ClientId caller = default)
+        [Rpc(RpcPerms.AnyToAll, RpcProtocol = Protocol.Udp)]
+        public virtual void SendPosition(NetworkVec3 pos, [CallerId] ClientId caller = default)
         {
             if (caller != Authority)
                 return;
@@ -158,8 +158,8 @@ namespace OwlTree.Unity
                 transform.transform.localPosition = new Vector3(pos.x, pos.y, pos.z);
         }
 
-        [Rpc(RpcCaller.Any, RpcProtocol = Protocol.Udp)]
-        public virtual void SendRotation(NetworkVec4 rot, [RpcCaller] ClientId caller = default)
+        [Rpc(RpcPerms.AnyToAll, RpcProtocol = Protocol.Udp)]
+        public virtual void SendRotation(NetworkVec4 rot, [CallerId] ClientId caller = default)
         {
             if (caller != Authority)
                 return;
@@ -173,8 +173,8 @@ namespace OwlTree.Unity
                 transform.transform.localRotation = new Quaternion(rot.x, rot.y, rot.z, rot.w);
         }
 
-        [Rpc(RpcCaller.Any, RpcProtocol = Protocol.Udp)]
-        public virtual void SendScale(NetworkVec3 scale, [RpcCaller] ClientId caller = default)
+        [Rpc(RpcPerms.AnyToAll, RpcProtocol = Protocol.Udp)]
+        public virtual void SendScale(NetworkVec3 scale, [CallerId] ClientId caller = default)
         {
             if (caller != Authority)
                 return;

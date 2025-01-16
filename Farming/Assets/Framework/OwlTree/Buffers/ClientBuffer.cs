@@ -18,7 +18,7 @@ namespace OwlTree
         public ClientBuffer(Args args, int requestRate, int requestLimit, bool requestAsHost) : base(args)
         {
             _tcpClient = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
-            _tcpEndPoint = new IPEndPoint(Address, TcpPort);
+            _tcpEndPoint = new IPEndPoint(Address, ServerTcpPort);
 
             _udpClient = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
             _udpClient.Bind(new IPEndPoint(IPAddress.Any, 0));
@@ -48,6 +48,10 @@ namespace OwlTree
         private List<Socket> _readList = new List<Socket>();
         private List<ClientId> _clients = new List<ClientId>();
 
+        public override int LocalTcpPort() => _tcpClient != null ? ((IPEndPoint)_tcpClient.LocalEndPoint).Port : 0;
+
+        public override int LocalUdpPort() => ((IPEndPoint)_udpClient.LocalEndPoint).Port;
+
         private uint _hash = 0;
 
         // messages to be sent ot the sever
@@ -67,7 +71,7 @@ namespace OwlTree
             if (DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() - _lastRequest > _requestRate)
             {
                 var idBytes = _udpPacket.GetSpan(ConnectionRequestLength);
-                ConnectionRequestEncode(idBytes, new ConnectionRequest(ApplicationId, _requestAsHost));
+                ConnectionRequestEncode(idBytes, new ConnectionRequest(ApplicationId, SessionId, _requestAsHost));
                 _udpClient.SendTo(_udpPacket.GetPacket().ToArray(), _udpEndPoint);
                 _udpPacket.Clear();
                 _lastRequest = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
@@ -135,7 +139,7 @@ namespace OwlTree
         /// Reads any data currently on the socket. Putting new messages in the queue.
         /// Blocks infinitely while waiting for the server to initially assign the buffer a ClientId.
         /// </summary>
-        public override void Read()
+        public override void Recv()
         {
             if (!_acceptedRequest && _remainingRequests > 0)
             {
@@ -214,7 +218,7 @@ namespace OwlTree
                             {
                                 if (TryClientMessageDecode(bytes, out var rpcId))
                                 {
-                                    HandleClientConnectionMessage(rpcId, bytes.Slice(RpcId.MaxLength()));
+                                    HandleClientConnectionMessage(rpcId, bytes.Slice(RpcId.MaxByteLength));
                                 }
                                 else if (TryPingRequestDecode(bytes, out var request))
                                 {
@@ -228,14 +232,16 @@ namespace OwlTree
                             catch (Exception e)
                             {
                                 if (Logger.includes.exceptions)
-                                    Logger.Write($"FAILED to decode message '{BitConverter.ToString(bytes.ToArray())}'. Exception thrown:\n{e}");
+                                    Logger.Write($"FAILED to decode TCP message '{BitConverter.ToString(bytes.ToArray())}'. Exception thrown:\n{e}");
                             }
                         }
                     } while (dataRemaining > 0);
                 }
                 else if (socket == _udpClient)
                 {
-                    do {
+                    do
+                    {
+
                         Array.Clear(ReadBuffer, 0, ReadBuffer.Length);
                         ReadPacket.Clear();
 
@@ -272,9 +278,17 @@ namespace OwlTree
                         ReadPacket.StartMessageRead();
                         while (ReadPacket.TryGetNextMessage(out var bytes))
                         {
-                            if (TryDecode(ClientId.None, bytes, out var message))
+                            try
                             {
-                                _incoming.Enqueue(message);
+                                if (TryDecode(ClientId.None, bytes, out var message))
+                                {
+                                    _incoming.Enqueue(message);
+                                }
+                            }
+                            catch (Exception e)
+                            {
+                                if (Logger.includes.exceptions)
+                                    Logger.Write($"FAILED to decode UDP message '{BitConverter.ToString(bytes.ToArray())}'. Exception thrown:\n{e}");
                             }
                         }
                     } while (_udpClient.Available > 0);
@@ -288,26 +302,27 @@ namespace OwlTree
         {
             switch (messageType.Id)
             {
-                case RpcId.CLIENT_CONNECTED_MESSAGE_ID:
+                case RpcId.ClientConnectedId:
                     var id = new ClientId(bytes);
                     _clients.Add(id);
                     OnClientConnected?.Invoke(id);
                     break;
-                case RpcId.LOCAL_CLIENT_CONNECTED_MESSAGE_ID:
+                case RpcId.LocalClientConnectedId:
                     var assignment = new ClientIdAssignment(bytes);
                     _clients.Add(assignment.assignedId);
                     LocalId = assignment.assignedId;
                     Authority = assignment.authorityId;
                     _hash = assignment.assignedHash;
+                    MaxClients = assignment.maxClients;
                     IsReady = true;
                     OnReady?.Invoke(LocalId);
                     break;
-                case RpcId.CLIENT_DISCONNECTED_MESSAGE_ID:
+                case RpcId.ClientDisconnectedId:
                     id = new ClientId(bytes);
                     _clients.Remove(id);
                     OnClientDisconnected?.Invoke(id);
                     break;
-                case RpcId.HOST_MIGRATION:
+                case RpcId.HostMigrationId:
                     Authority = new ClientId(bytes);
                     OnHostMigration?.Invoke(Authority);
                     break;
@@ -328,7 +343,14 @@ namespace OwlTree
                 {
                     original.PingResponded();
                     _pingRequests.Remove(original);
-                    _incoming.Enqueue(new Message(ClientId.None, LocalId, new RpcId(RpcId.PING_REQUEST), NetworkId.None, Protocol.Tcp, new object[]{original}));
+                    _incoming.Enqueue(new Message(
+                        ClientId.None, 
+                        LocalId, 
+                        new RpcId(RpcId.PingRequestId), 
+                        NetworkId.None, 
+                        Protocol.Tcp, 
+                        RpcPerms.AnyToAll, 
+                        new object[]{original}));
                 }
             }
         }
@@ -383,7 +405,7 @@ namespace OwlTree
 
                 if (Logger.includes.udpPreTransform)
                 {
-                    var packetStr = new StringBuilder($"SENDING: Pre-Transform UDP packet to server from {LocalId}:\n");
+                    var packetStr = new StringBuilder($"SENDING: Pre-Transform UDP packet to server at {DateTime.UtcNow}:\n");
                     PacketToString(_udpPacket, packetStr);
                     Logger.Write(packetStr.ToString());
                 }
@@ -392,7 +414,7 @@ namespace OwlTree
 
                 if (Logger.includes.udpPostTransform)
                 {
-                    var packetStr = new StringBuilder($"SENDING: Post-Transform UDP packet to server from {LocalId}:\n");
+                    var packetStr = new StringBuilder($"SENDING: Post-Transform UDP packet to server at {DateTime.UtcNow}:\n");
                     PacketToString(_udpPacket, packetStr);
                     Logger.Write(packetStr.ToString());
                 }

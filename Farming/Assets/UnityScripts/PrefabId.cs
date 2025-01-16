@@ -8,7 +8,7 @@ namespace OwlTree.Unity
     /// </summary>
     public struct PrefabId : IEncodable
     {
-        public const UInt32 FIRST_PREFAB_ID = 1;
+        public const UInt32 FirstPrefabId = 1;
 
         // the actual id
         private UInt32 _id;

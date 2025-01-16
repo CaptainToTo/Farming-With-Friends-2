@@ -37,7 +37,7 @@ namespace OwlTree
                 throw new ArgumentException("NetworkList must have an encodable type.");
             }
 
-            _list = new List<T>();
+            _list = new List<T>(capacity);
 
             _maxLen = 4 + (Capacity * RpcEncoding.GetMaxLength(typeof(T)));
         }

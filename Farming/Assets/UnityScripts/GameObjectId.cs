@@ -8,7 +8,7 @@ namespace OwlTree.Unity
     /// </summary>
     public struct GameObjectId : IEncodable
     {
-        public const UInt32 FIRST_GAMEOBJECT_ID = 1;
+        public const UInt32 FirstGameObjectId = 1;
 
         // the actual id
         private UInt32 _id;

@@ -96,14 +96,14 @@ public class CropManagerNetcode : NetworkObject
             RequestManagerId();
     }
 
-    [Rpc(RpcCaller.Client)]
-    public virtual void RequestManagerId([RpcCaller] ClientId caller = default)
+    [Rpc(RpcPerms.ClientsToAuthority)]
+    public virtual void RequestManagerId([CallerId] ClientId caller = default)
     {
         SendManagerId(caller, manager.NetObject.Id);
     }
     
-    [Rpc(RpcCaller.Server)]
-    public virtual void SendManagerId([RpcCallee] ClientId callee, GameObjectId id)
+    [Rpc(RpcPerms.AuthorityToClients)]
+    public virtual void SendManagerId([CalleeId] ClientId callee, GameObjectId id)
     {
         Connection.WaitForObject<GameObjectId, NetworkGameObject>(id, (obj) => {
             manager = obj.GetComponent<CropManager>();
@@ -112,15 +112,15 @@ public class CropManagerNetcode : NetworkObject
         });
     }
 
-    [Rpc(RpcCaller.Client)]
-    public virtual void RequestCrops([RpcCaller] ClientId caller = default)
+    [Rpc(RpcPerms.ClientsToAuthority)]
+    public virtual void RequestCrops([CallerId] ClientId caller = default)
     {
         foreach (var crop in manager.Crops)
             SendCrop(caller, crop.NetObject.Id, new NetworkVec3(crop.transform.position.x, crop.transform.position.y, crop.transform.position.z));
     }
 
-    [Rpc(RpcCaller.Server)]
-    public virtual void SendCrop([RpcCallee] ClientId callee, GameObjectId cropId, NetworkVec3 pos)
+    [Rpc(RpcPerms.AuthorityToClients)]
+    public virtual void SendCrop([CalleeId] ClientId callee, GameObjectId cropId, NetworkVec3 pos)
     {
         Connection.WaitForObject<GameObjectId, NetworkGameObject>(cropId, (obj) => {
             manager.AddCrop(obj.GetComponent<Crop>());
@@ -128,21 +128,21 @@ public class CropManagerNetcode : NetworkObject
         });
     }
 
-    [Rpc(RpcCaller.Server)]
+    [Rpc(RpcPerms.AuthorityToClients)]
     public virtual void SendPlant(GameObjectId cropId, GameObjectId playerId)
     {
         Connection.WaitForObject<GameObjectId, NetworkGameObject>(cropId, (obj) => {
             manager.AddCrop(obj.GetComponent<Crop>());
-            obj.transform.position = Connection.GetObject<GameObjectId, NetworkGameObject>(playerId).transform.position +
+            obj.transform.position = Connection.Maps.Get<GameObjectId, NetworkGameObject>(playerId).transform.position +
                 new Vector3(0, -0.5f, -1f);
         });
     }
 
-    [Rpc(RpcCaller.Client)]
-    public virtual void RequestPlant(GameObjectId objId, [RpcCaller] ClientId caller = default)
+    [Rpc(RpcPerms.ClientsToAuthority)]
+    public virtual void RequestPlant(GameObjectId objId, [CallerId] ClientId caller = default)
     {
         if (
-            Connection.TryGetObject<GameObjectId, NetworkGameObject>(objId, out var obj) &&
+            Connection.Maps.TryGet<GameObjectId, NetworkGameObject>(objId, out var obj) &&
             obj.TryGetComponent<Player>(out var player) && player.PlayerId == caller
         )
         {
@@ -150,21 +150,21 @@ public class CropManagerNetcode : NetworkObject
         }
     }
 
-    [Rpc(RpcCaller.Server)]
+    [Rpc(RpcPerms.AuthorityToClients)]
     public virtual void SendHarvest(GameObjectId cropId)
     {
-        NetworkGameObject obj = Connection.GetObject<GameObjectId, NetworkGameObject>(cropId);
+        NetworkGameObject obj = Connection.Maps.Get<GameObjectId, NetworkGameObject>(cropId);
         manager.RemoveCrop(obj.GetComponent<Crop>());
     }
     
-    [Rpc(RpcCaller.Client)]
-    public virtual void RequestHarvest(GameObjectId cropId, GameObjectId playerId, [RpcCaller] ClientId caller = default)
+    [Rpc(RpcPerms.ClientsToAuthority)]
+    public virtual void RequestHarvest(GameObjectId cropId, GameObjectId playerId, [CallerId] ClientId caller = default)
     {
         if (
-            Connection.TryGetObject<GameObjectId, NetworkGameObject>(cropId, out var cropObj) &&
+            Connection.Maps.TryGet<GameObjectId, NetworkGameObject>(cropId, out var cropObj) &&
             cropObj.TryGetComponent<Crop>(out var crop) && 
 
-            Connection.TryGetObject<GameObjectId, NetworkGameObject>(playerId, out var playerObj) &&
+            Connection.Maps.TryGet<GameObjectId, NetworkGameObject>(playerId, out var playerObj) &&
             playerObj.TryGetComponent<Player>(out var player) && player.PlayerId == caller &&
 
             (crop.transform.position - player.transform.position).magnitude <= player.harvestReach
