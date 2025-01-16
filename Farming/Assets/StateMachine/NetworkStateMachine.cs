@@ -143,7 +143,7 @@ namespace OwlTree.StateMachine
         /// <summary>
         /// Rpc to set a new authority of this state machine.
         /// </summary>
-        [Rpc(RpcCaller.Server, InvokeOnCaller = true)]
+        [Rpc(RpcPerms.AuthorityToClients, InvokeOnCaller = true)]
         public virtual void SetAuthority(ClientId authority)
         {
             Authority = authority;
@@ -158,8 +158,8 @@ namespace OwlTree.StateMachine
                 RemoveState(i);
         }
 
-        [Rpc(RpcCaller.Server)]
-        public virtual void RemoveState(int i, [RpcCaller] ClientId caller = default)
+        [Rpc(RpcPerms.AnyToAll)]
+        public virtual void RemoveState(int i, [CallerId] ClientId caller = default)
         {
             if (!Initialized)
                 return;
@@ -183,8 +183,8 @@ namespace OwlTree.StateMachine
                 InsertState(i, GetId(state));
         }
 
-        [Rpc(RpcCaller.Any)]
-        public virtual void InsertState(int i, int state, [RpcCaller] ClientId caller = default)
+        [Rpc(RpcPerms.AnyToAll)]
+        public virtual void InsertState(int i, int state, [CallerId] ClientId caller = default)
         {
             if (!Initialized)
                 return;
@@ -213,8 +213,8 @@ namespace OwlTree.StateMachine
                 SwapStates(GetId(from), GetId(to), ind);
         }
 
-        [Rpc(RpcCaller.Any)]
-        public virtual void SwapStates(int from, int to, int ind, [RpcCaller] ClientId caller = default)
+        [Rpc(RpcPerms.AnyToAll)]
+        public virtual void SwapStates(int from, int to, int ind, [CallerId] ClientId caller = default)
         {
             if (!Initialized)
                 return;

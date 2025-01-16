@@ -14,7 +14,7 @@ namespace OwlTree.Unity
         public override void OnSpawn()
         {
             _instances.Add(this);
-            Connection.AddObjectMap<GameObjectId, NetworkGameObject>();
+            Connection.Maps.AddMap<GameObjectId, NetworkGameObject>();
         }
 
         public override void OnDespawn()
@@ -43,7 +43,7 @@ namespace OwlTree.Unity
 
         public IEnumerable<GameObject> Prefabs => _prefabs.Values;
 
-        public IEnumerable<NetworkGameObject> Objects => Connection.GetObjects<GameObjectId, NetworkGameObject>();
+        public IEnumerable<NetworkGameObject> Objects => Connection.Maps.GetValues<GameObjectId, NetworkGameObject>();
 
         private bool TryGetPrefabId(GameObject prefab, out PrefabId id)
         {
@@ -61,12 +61,12 @@ namespace OwlTree.Unity
 
         public bool TryGetObject(GameObjectId id, out NetworkGameObject obj)
         {
-            return Connection.TryGetObject(id, out obj);
+            return Connection.Maps.TryGet(id, out obj);
         }
 
         public NetworkGameObject GetGameObject(GameObjectId id)
         {
-            if (!Connection.TryGetObject(id, out NetworkGameObject obj))
+            if (!Connection.Maps.TryGet(id, out NetworkGameObject obj))
                 return null;
             return obj;
         }
@@ -98,7 +98,7 @@ namespace OwlTree.Unity
             netObj.Id = NextGameObjectId();
             netObj.Prefab = id;
             netObj.Connection = _connection;
-            Connection.AddObjectToMap(netObj.Id, netObj);
+            Connection.Maps.Add(netObj.Id, netObj);
 
             SendSpawn(id, netObj.Id);
 
@@ -107,7 +107,7 @@ namespace OwlTree.Unity
             return netObj;
         }
 
-        [Rpc(RpcCaller.Server)]
+        [Rpc(RpcPerms.AuthorityToClients)]
         public virtual void SendSpawn(PrefabId id, GameObjectId assignedId)
         {
             if (!Initialized)
@@ -124,7 +124,7 @@ namespace OwlTree.Unity
             netObj.Id = assignedId;
             netObj.Prefab = id;
             netObj.Connection = _connection;
-            Connection.AddObjectToMap(netObj.Id, netObj);
+            Connection.Maps.Add(netObj.Id, netObj);
             netObj.InvokeOnSpawn();
         }
 
@@ -134,21 +134,21 @@ namespace OwlTree.Unity
                 SendSpawnTo(callee, obj.Prefab, obj.Id);
         }
 
-        [Rpc(RpcCaller.Client)]
-        public virtual void RequestObjects([RpcCaller] ClientId caller = default)
+        [Rpc(RpcPerms.ClientsToAuthority)]
+        public virtual void RequestObjects([CallerId] ClientId caller = default)
         {
             SendNetworkObjects(caller);
         }
 
-        [Rpc(RpcCaller.Server)]
-        public virtual void SendSpawnTo([RpcCallee] ClientId callee, PrefabId id, GameObjectId assignedId)
+        [Rpc(RpcPerms.AuthorityToClients)]
+        public virtual void SendSpawnTo([CalleeId] ClientId callee, PrefabId id, GameObjectId assignedId)
         {
             if (!Initialized)
                 return;
             
             if (!_prefabs.TryGetValue(id, out var prefab))
                 throw new ArgumentException($"prefab id {id} is not assigned to a prefab.");
-            if (Connection.HasKey(assignedId))
+            if (Connection.Maps.HasKey(assignedId))
                 return;
             
             var obj = GameObject.Instantiate(prefab);
@@ -158,27 +158,26 @@ namespace OwlTree.Unity
             
             netObj.Id = assignedId;
             netObj.Connection = _connection;
-            Connection.AddObjectToMap(netObj.Id, netObj);
+            Connection.Maps.Add(netObj.Id, netObj);
             netObj.InvokeOnSpawn();
         }
 
         public void Despawn(NetworkGameObject target)
         {
-            Connection.RemoveObject(target.Id);
+            Connection.Maps.Remove(target.Id);
             target.InvokeOnDespawn();
             OnObjectDespawn?.Invoke(target);
             target.Connection = null;
-            Connection.RemoveObject(target.Id);
             SendDespawn(target.Id);
             GameObject.Destroy(target.gameObject);
         }
 
-        [Rpc(RpcCaller.Server)]
+        [Rpc(RpcPerms.AuthorityToClients)]
         public virtual void SendDespawn(GameObjectId id)
         {
-            if (!Connection.TryGetObject(id, out NetworkGameObject obj))
+            if (!Connection.Maps.TryGet(id, out NetworkGameObject obj))
                 throw new ArgumentException($"no network game object has the id {id}.");
-            Connection.RemoveObject(id);
+            Connection.Maps.Remove(id);
             obj.InvokeOnDespawn();
             OnObjectDespawn?.Invoke(obj);
             obj.Connection = null;
@@ -195,7 +194,7 @@ namespace OwlTree.Unity
                 if (obj != null)
                     GameObject.Destroy(obj.gameObject);
             }
-            Connection.ClearMap<GameObjectId, NetworkGameObject>();
+            Connection.Maps.Clear<GameObjectId, NetworkGameObject>();
         }
     }
 }
