@@ -5,8 +5,7 @@ using System.Linq;
 namespace OwlTree.StateMachine
 {
     /// <summary>
-    /// Synchronizes a state machine across clients on a connection. Type T is the data container type 
-    /// of the states the state machine contains.
+    /// Synchronizes a state machine across clients on a connection.
     /// </summary>
     public class NetworkStateMachine : NetworkObject
     {
@@ -21,6 +20,8 @@ namespace OwlTree.StateMachine
         /// specific state machines.
         /// </summary>
         public ClientId Authority { get; private set; } = ClientId.None;
+        // used to determine if Authority needs to be changed when a host migration occurs
+        // If Authority == _originalAuth (a.k.a. previous host), change Authority to the new host.
         private ClientId _originalAuth = ClientId.None;
 
         /// <summary>
@@ -142,6 +143,7 @@ namespace OwlTree.StateMachine
 
         /// <summary>
         /// Rpc to set a new authority of this state machine.
+        /// Can only be called by the connection Authority.
         /// </summary>
         [Rpc(RpcPerms.AuthorityToClients, InvokeOnCaller = true)]
         public virtual void SetAuthority(ClientId authority)
@@ -158,6 +160,9 @@ namespace OwlTree.StateMachine
                 RemoveState(i);
         }
 
+        /// <summary>
+        /// RPC to dispatch state removal, this doesn't need to be called by you.
+        /// </summary>
         [Rpc(RpcPerms.AnyToAll)]
         public virtual void RemoveState(int i, [CallerId] ClientId caller = default)
         {
@@ -183,6 +188,9 @@ namespace OwlTree.StateMachine
                 InsertState(i, GetId(state));
         }
 
+        /// <summary>
+        /// RPC to dispatch state insertion, this doesn't need to be called by you.
+        /// </summary>
         [Rpc(RpcPerms.AnyToAll)]
         public virtual void InsertState(int i, int state, [CallerId] ClientId caller = default)
         {
@@ -212,7 +220,10 @@ namespace OwlTree.StateMachine
             if (Connection.LocalId == Authority)
                 SwapStates(GetId(from), GetId(to), ind);
         }
-
+        
+        /// <summary>
+        /// RPC to dispatch state swapping, this doesn't need to be called by you.
+        /// </summary>
         [Rpc(RpcPerms.AnyToAll)]
         public virtual void SwapStates(int from, int to, int ind, [CallerId] ClientId caller = default)
         {

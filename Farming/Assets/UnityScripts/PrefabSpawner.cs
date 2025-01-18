@@ -5,10 +5,16 @@ using UnityEngine;
 
 namespace OwlTree.Unity
 {
+    /// <summary>
+    /// Manages synchronized GameObjects using predefined prefabs
+    /// provided in the prefabs list of a ConnectionArgs Scriptable Object.
+    /// </summary>
     public class PrefabSpawner : NetworkObject
     {
         private static List<PrefabSpawner> _instances = new();
-
+        /// <summary>
+        /// Iterable of all PrefabSpawner instances that exist locally.
+        /// </summary>
         public static IEnumerable<PrefabSpawner> Instances => _instances;
 
         public override void OnSpawn()
@@ -22,6 +28,10 @@ namespace OwlTree.Unity
             _instances.Remove(this);
         }
 
+        /// <summary>
+        /// Provide the prefabs this spawner will be able to use. This list of prefabs
+        /// should be the same across all connections for this application.
+        /// </summary>
         public void Initialize(UnityConnection connection, IEnumerable<GameObject> prefabs)
         {
             _connection = connection;
@@ -38,13 +48,26 @@ namespace OwlTree.Unity
                 RequestObjects();
         }
 
+        /// <summary>
+        /// Returns true if this spawner is ready to start spawning prefabs.
+        /// </summary>
         public bool Initialized { get; private set; } = false;
         private Dictionary<PrefabId, GameObject> _prefabs = new();
 
+        /// <summary>
+        /// The prefabs this spawner is able to use.
+        /// </summary>
         public IEnumerable<GameObject> Prefabs => _prefabs.Values;
 
+        /// <summary>
+        /// The synchronized GameObjects this spawner is managing.
+        /// </summary>
         public IEnumerable<NetworkGameObject> Objects => Connection.Maps.GetValues<GameObjectId, NetworkGameObject>();
 
+        /// <summary>
+        /// Try to get a prefab based on the id it was assigned at initialization.
+        /// Returns true if the prefab was found, false otherwise.
+        /// </summary>
         private bool TryGetPrefabId(GameObject prefab, out PrefabId id)
         {
             foreach (var pair in _prefabs)
@@ -59,11 +82,19 @@ namespace OwlTree.Unity
             return false;
         }
 
+        /// <summary>
+        /// Try to get a NetworkGameObject using the provided id.
+        /// Returns true if the object was found, false otherwise.
+        /// </summary>
         public bool TryGetObject(GameObjectId id, out NetworkGameObject obj)
         {
             return Connection.Maps.TryGet(id, out obj);
         }
 
+        /// <summary>
+        /// Get a NetworkGameObject using the provided id.
+        /// Returns null if no such object was found.
+        /// </summary>
         public NetworkGameObject GetGameObject(GameObjectId id)
         {
             if (!Connection.Maps.TryGet(id, out NetworkGameObject obj))
@@ -73,8 +104,13 @@ namespace OwlTree.Unity
 
         private UnityConnection _connection;
 
+        /// <summary>
+        /// Invoked when a new GameObject is instantiated from a prefab.
+        /// </summary>
         public Action<NetworkGameObject> OnObjectSpawn;
-
+        /// <summary>
+        /// Invoked when a synchronized GameObject is destroyed.
+        /// </summary>
         public Action<NetworkGameObject> OnObjectDespawn;
 
         private uint _curId = GameObjectId.FirstGameObjectId;
@@ -85,6 +121,9 @@ namespace OwlTree.Unity
             return id;
         }
 
+        /// <summary>
+        /// Synchronously instantiate a new GameObject using the given prefab.
+        /// </summary>
         public NetworkGameObject Spawn(GameObject prefab)
         {
             if (!TryGetPrefabId(prefab, out var id))
@@ -128,18 +167,28 @@ namespace OwlTree.Unity
             netObj.InvokeOnSpawn();
         }
 
+        /// <summary>
+        /// Sends all existing NetworkGameObjects to the given client.
+        /// </summary>
         public void SendNetworkObjects(ClientId callee)
         {
             foreach (var obj in Objects)
                 SendSpawnTo(callee, obj.Prefab, obj.Id);
         }
 
+        /// <summary>
+        /// Used by newly connected clients to request all existing NetworkGameObjects
+        /// to get synchronized with the session.
+        /// </summary>
         [Rpc(RpcPerms.ClientsToAuthority)]
         public virtual void RequestObjects([CallerId] ClientId caller = default)
         {
             SendNetworkObjects(caller);
         }
 
+        /// <summary>
+        /// Spawn a new NetworkGameobject for a single client.
+        /// </summary>
         [Rpc(RpcPerms.AuthorityToClients)]
         public virtual void SendSpawnTo([CalleeId] ClientId callee, PrefabId id, GameObjectId assignedId)
         {
@@ -162,6 +211,9 @@ namespace OwlTree.Unity
             netObj.InvokeOnSpawn();
         }
 
+        /// <summary>
+        /// Destroy an existing NetworkGameObject across all clients.
+        /// </summary>
         public void Despawn(NetworkGameObject target)
         {
             Connection.Maps.Remove(target.Id);
@@ -184,6 +236,9 @@ namespace OwlTree.Unity
             GameObject.Destroy(obj.gameObject);
         }
 
+        /// <summary>
+        /// Locally destroy all NetworkGameObjects managed by this spawner.
+        /// </summary>
         public void DespawnAll()
         {
             foreach (var obj in Objects)

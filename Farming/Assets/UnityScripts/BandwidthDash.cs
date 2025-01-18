@@ -5,11 +5,16 @@ using UnityEngine;
 
 namespace OwlTree.Unity
 {
+    /// <summary>
+    /// Simple diagnostics tool to display a connection's measured bandwidth usage.
+    /// </summary>
     public class BandwidthDash : MonoBehaviour
     {
+        [Tooltip("The connection this dash will display info about.")] 
         [SerializeField] private UnityConnection _connection;
-
+        [Tooltip("The frequency at which the display will update at.")]
         [SerializeField] private float _updateFrequency = 0.5f;
+        [Space]
         [SerializeField] private TextMeshProUGUI _clientText;
         [SerializeField] private TextMeshProUGUI _recvText;
         [SerializeField] private TextMeshProUGUI _sendText;

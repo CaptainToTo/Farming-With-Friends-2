@@ -7,6 +7,7 @@ using System.Linq;
 using System.Net;
 using System.Text;
 using System.Threading;
+using Unity.VisualScripting;
 
 namespace OwlTree
 {
@@ -211,6 +212,20 @@ namespace OwlTree
             /// Specify what information will get logged. <b>Default = None</b>
             /// </summary>
             public Logger.IncludeRules verbosity = Logger.Includes();
+
+            /// <summary>
+            /// Special args for add-ons.
+            /// </summary>
+            internal Dictionary<string, object> addOnArgs = new();
+
+            /// <summary>
+            /// Add a new argument to the add-on arguments.
+            /// </summary>
+            internal Args Add(string key, object val) 
+            {
+                addOnArgs.Add(key, val);
+                return this;
+            }
 
             public Args() { }
         }
