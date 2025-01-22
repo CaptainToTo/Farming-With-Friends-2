@@ -5,7 +5,7 @@ using System.IO;
 using System.Net;
 using System.Text;
 
-namespace OwlTree.Matchmaking
+namespace OwlTree.Matchmaking.Unity
 {
     /// <summary>
     /// Run on the server to listen for matchmaking requests from a matchmaking client.

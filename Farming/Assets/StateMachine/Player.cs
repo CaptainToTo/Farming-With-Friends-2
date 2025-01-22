@@ -22,8 +22,8 @@ public class Player : NetworkBehaviour
     private StateMachine _machine;
     public ClientId PlayerId {get; private set; }
 
-    [SerializeField] public GameObject cropPrefab;
     [SerializeField] TextMeshProUGUI _idText;
+    [SerializeField] Camera _cmra;
 
     public bool IsLocal => netcode == null || PlayerId == Connection.LocalId;
 
@@ -31,8 +31,10 @@ public class Player : NetworkBehaviour
     {
         this.netcode = netcode;
         PlayerId = playerId;
-        _idText.text = playerId.ToString() + "\n" + netcode.Connection.LocalId;
+        _idText.text = playerId.ToString();
         this.netcode.Initialize(_machine, new State[]{Idle, Move, Plant, Harvest, Grounded, Airborne, Jump});
+        if (playerId != Connection.LocalId)
+            _cmra.gameObject.SetActive(false);
     }
 
     public readonly PlayerIdle Idle = new PlayerIdle();
@@ -95,7 +97,7 @@ public class Player : NetworkBehaviour
 
     void Update()
     {
-        if (!IsLocal || !ClientSwitch.IsSelected(PlayerId))
+        if (!IsLocal)
             return;
 
         float x = Input.GetKey(KeyCode.A) ? -1f :

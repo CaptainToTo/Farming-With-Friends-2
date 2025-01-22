@@ -1,9 +1,8 @@
 
-using System.Text.Json;
-using System.Text.Json.Serialization;
+using System;
 using UnityEngine;
 
-namespace OwlTree.Matchmaking
+namespace OwlTree.Matchmaking.Unity
 {
     /// <summary>
     /// Matchmaking HTTP response codes.
@@ -38,12 +37,13 @@ namespace OwlTree.Matchmaking
     /// Sent by the matchmaking endpoint in response to a matchmaking request from a client.
     /// This will contain data needed to make an OwlTree Connection.
     /// </summary>
+    [Serializable]
     public struct MatchmakingResponse
     {
         /// <summary>
         /// The HTTP response code.
         /// </summary>
-        public ResponseCodes responseCode { get; set; }
+        public ResponseCodes responseCode;
 
         /// <summary>
         /// Returns true if the response has a successful response code.
@@ -57,32 +57,32 @@ namespace OwlTree.Matchmaking
         /// <summary>
         /// The IP address of the server or relay connection.
         /// </summary>
-        public string serverAddr { get; set; }
+        public string serverAddr;
 
         /// <summary>
         /// The UDP port of the server or relay connection.
         /// </summary>
-        public int udpPort { get; set; }
+        public int udpPort;
 
         /// <summary>
         /// The TCP port of the server or relay connection.
         /// </summary>
-        public int tcpPort { get; set; }
+        public int tcpPort;
 
         /// <summary>
         /// The session id of the server or relay connection.
         /// </summary>
-        public string sessionId { get; set; }
+        public string sessionId;
         
         /// <summary>
         /// The session id of the server or relay connection.
         /// </summary>
-        public string appId { get; set; }
+        public string appId;
 
         /// <summary>
         /// Whether the created session is server authoritative, or relayed peer-to-peer.
         /// </summary>
-        public ServerType serverType { get; set; }
+        public ServerType serverType;
 
         /// <summary>
         /// Serializes the response to a JSON string.

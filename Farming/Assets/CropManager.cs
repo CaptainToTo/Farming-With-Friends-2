@@ -16,6 +16,7 @@ public class CropManager : NetworkBehaviour
             netcode = Connection.Spawn<CropManagerNetcode>();
             netcode.manager = this;
         }
+        DontDestroyOnLoad(gameObject);
     }
 
     [SerializeField] GameObject cropPrefab;

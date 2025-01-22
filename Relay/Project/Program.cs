@@ -1,4 +1,5 @@
-﻿using OwlTree;
+﻿using System.Net;
+using OwlTree;
 using OwlTree.Matchmaking;
 
 public static class Program
@@ -7,7 +8,7 @@ public static class Program
 
     public static void Main(string[] args)
     {
-        var endpoint = new MatchmakingEndpoint("http://localhost:5000/", HandleRequest);
+        var endpoint = new MatchmakingEndpoint("http://127.0.0.1:5000/", HandleRequest);
         relays = new ConnectionManager();
         endpoint.Start();
         HandleCommands();
@@ -15,7 +16,7 @@ public static class Program
         relays.DisconnectAll();
     }
 
-    public static MatchmakingResponse HandleRequest(MatchmakingRequest request)
+    public static MatchmakingResponse HandleRequest(IPAddress client, MatchmakingRequest request)
     {
         if (!relays!.Contains(request.sessionId))
         {
@@ -28,6 +29,7 @@ public static class Program
                 role = NetRole.Relay,
                 tcpPort = 0,
                 udpPort = 0,
+                hostAddr = client.ToString(),
                 maxClients = request.maxClients,
                 migratable = request.migratable,
                 owlTreeVersion = request.owlTreeVersion,
@@ -37,6 +39,7 @@ public static class Program
                 logger = (str) => File.AppendAllText(logFile, str),
                 verbosity = Logger.Includes().All()
             });
+            connection.Log($"New Relay: {connection.SessionId} for App {connection.AppId}\nTCP: {connection.LocalTcpPort}\nUDP: {connection.LocalUdpPort}\nRequested Host: {client.ToString()}");
 
             return new MatchmakingResponse{
                 responseCode = ResponseCodes.RequestAccepted,
@@ -45,6 +48,19 @@ public static class Program
                 tcpPort = connection.ServerTcpPort,
                 sessionId = request.sessionId,
                 appId = request.appId,
+                serverType = ServerType.Relay
+            };
+        }
+        else if (request.clientRole == ClientRole.Client && relays!.Contains(request.sessionId))
+        {
+            var connection = relays!.Get(request.sessionId);
+            return new MatchmakingResponse{
+                responseCode = ResponseCodes.RequestAccepted,
+                serverAddr = "127.0.0.1",
+                udpPort = connection!.ServerUdpPort,
+                tcpPort = connection!.ServerTcpPort,
+                sessionId = request!.sessionId,
+                appId = request!.appId,
                 serverType = ServerType.Relay
             };
         }

@@ -2,11 +2,10 @@ using System;
 using System.Collections.Generic;
 using System.Net.Http;
 using System.Text;
-using System.Text.Json;
 using System.Threading.Tasks;
 using UnityEngine;
 
-namespace OwlTree.Matchmaking
+namespace OwlTree.Matchmaking.Unity
 {
     /// <summary>
     /// The kind of session the client is requesting.
@@ -41,54 +40,55 @@ namespace OwlTree.Matchmaking
     /// <summary>
     /// Sent by clients to a matchmaking endpoint.
     /// </summary>
+    [Serializable]
     public struct MatchmakingRequest
     {
         /// <summary>
         /// The unique app id that will be used to verify clients attempting to 
         /// connect to the session.
         /// </summary>
-        public string appId { get; set; }
+        public string appId;
         /// <summary>
         /// The unique session id that will identify the session from other sessions
         /// being managed by the server.
         /// </summary>
-        public string sessionId { get; set; }
+        public string sessionId;
         /// <summary>
         /// The type of session being requested.
         /// </summary>
-        public ServerType serverType { get; set; }
+        public ServerType serverType;
         /// <summary>
         /// The role this client is requesting.
         /// </summary>
-        public ClientRole clientRole { get; set; }
+        public ClientRole clientRole;
         /// <summary>
         /// The max clients allowed at once in the requested session.
         /// </summary>
-        public int maxClients { get; set; }
+        public int maxClients;
         /// <summary>
         /// Whether or not a relayed session will allow host migration.
         /// </summary>
-        public bool migratable { get; set; }
+        public bool migratable;
         /// <summary>
         /// The version of OwlTree the session will use.
         /// </summary>
-        public ushort owlTreeVersion { get; set; }
+        public ushort owlTreeVersion;
         /// <summary>
         /// The minimum version of OwlTree the session will allow.
         /// </summary>
-        public ushort minOwlTreeVersion { get; set; }
+        public ushort minOwlTreeVersion;
         /// <summary>
         /// The version of your app the session will use.
         /// </summary>
-        public ushort appVersion { get; set; }
+        public ushort appVersion;
         /// <summary>
         /// The minimum version of your app the session will allow.
         /// </summary>
-        public ushort minAppVersion { get; set; }
+        public ushort minAppVersion;
         /// <summary>
         /// App specific arguments.
         /// </summary>
-        public Dictionary<string, string> args { get; set; }
+        public Dictionary<string, string> args;
 
         /// <summary>
         /// Serialize the request as a JSON string.

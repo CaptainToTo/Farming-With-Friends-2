@@ -26,6 +26,14 @@ namespace OwlTree.Unity
         /// </summary>
         public Connection Connection { get; private set; } = null;
 
+        /// <summary>
+        /// Initialization arguments for building a new Unity connection.
+        /// </summary>
+        public class Args : Connection.Args
+        {
+            public GameObject[] prefabs = null;
+        }
+
         [Tooltip("Will be used as a default if no args are provided in Connect(). This can used for easier testing.")]
         [SerializeField] private ConnectionArgs _args;
         
@@ -108,10 +116,12 @@ namespace OwlTree.Unity
         /// <summary>
         /// Starts the connection. Provide args to configure the connection.
         /// </summary>
-        public void Connect(Connection.Args args = null)
+        public void Connect(Args args = null)
         {
             if (args == null)
                 args = _args.GetArgs();
+            if (args.bandwidthReporter == null)
+                args.bandwidthReporter = (bandwidth) => OnBandwidthReport.Invoke(bandwidth);
             Connection = new Connection(args);
 
             Connection.OnClientConnected += (id) => OnClientConnected.Invoke(id);
@@ -125,12 +135,12 @@ namespace OwlTree.Unity
             Connection.OnObjectSpawn += (id) => OnObjectSpawn.Invoke(id);
             Connection.OnObjectDespawn += (id) => OnObjectDespawn.Invoke(id);
 
-            StartCoroutine(WaitForReady());
+            StartCoroutine(WaitForReady(args));
 
             OnStart?.Invoke(this);
         }
 
-        private IEnumerator WaitForReady()
+        private IEnumerator WaitForReady(Args args)
         {
             while (!Connection.IsReady)
                 yield return null;
@@ -138,7 +148,7 @@ namespace OwlTree.Unity
             if (Connection.IsAuthority)
             {
                 _spawner = Connection.Spawn<PrefabSpawner>();
-                _spawner.Initialize(this, _args.prefabs);
+                _spawner.Initialize(this, args.prefabs);
             }
 
             while (_spawner == null)
@@ -149,6 +159,7 @@ namespace OwlTree.Unity
                     {
                         _spawner = s;
                         _spawner.Initialize(this, _args.prefabs);
+                        Debug.Log("got spawner");
                         break;
                     }
                 }

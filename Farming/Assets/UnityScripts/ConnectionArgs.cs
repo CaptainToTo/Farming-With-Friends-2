@@ -88,9 +88,9 @@ namespace OwlTree.Unity
 
         public GameObject[] prefabs;
 
-        public Connection.Args GetArgs()
+        public UnityConnection.Args GetArgs()
         {
-            return new Connection.Args{
+            return new UnityConnection.Args{
                 appId = appId,
                 sessionId = sessionId,
                 role = isClient ? NetRole.Client : NetRole.Server,
@@ -113,8 +113,9 @@ namespace OwlTree.Unity
                 threaded = threaded,
                 threadUpdateDelta = threadUpdateDelta,
                 logger = Debug.Log,
-                verbosity = Logger.Includes().AllRpcProtocols().AllTypeIds().ClientEvents()
-            }.Add("prefabs", prefabs);
+                verbosity = Logger.Includes().AllRpcProtocols().AllTypeIds().ClientEvents().ConnectionAttempts(),
+                prefabs = prefabs
+            };
         }
     }
 }

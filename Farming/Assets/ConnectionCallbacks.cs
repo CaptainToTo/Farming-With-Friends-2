@@ -8,9 +8,9 @@ using TMPro;
 public class ConnectionCallbacks : MonoBehaviour
 {
     private UnityConnection connection;
-    [SerializeField] private GameObject playerManagerPrefab;
+    [SerializeField] private GameObject managersPrefab;
 
-    [SerializeField] private TextMeshProUGUI roleText;
+    [SerializeField] private TextMeshProUGUI sessionText;
 
     public void OnAwake(UnityConnection connection)
     {
@@ -21,12 +21,8 @@ public class ConnectionCallbacks : MonoBehaviour
     {
         if (connection.IsAuthority)
         {
-            connection.Spawn(playerManagerPrefab);
-            roleText.text = "host " + localId;
+            connection.Spawn(managersPrefab);
         }
-        else
-        {
-            roleText.text = "client " + localId;
-        }
+        sessionText.text = $"Session Id: {connection.SessionId.Id}\nApp Id: {connection.AppId.Id}\n{localId} [{(connection.IsAuthority ? "host" : "client")}]";
     }
 }

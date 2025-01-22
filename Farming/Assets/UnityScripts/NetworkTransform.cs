@@ -16,8 +16,6 @@ namespace OwlTree.Unity
                 netcode.SetAuthority(authority);
         }
 
-        public Vector3 offset;
-
         public override void OnSpawn()
         {
             if (Connection.IsAuthority)
@@ -46,7 +44,7 @@ namespace OwlTree.Unity
 
             if (Connection.LocalId == netcode.Authority)
             {
-                var pos = new NetworkVec3(transform.localPosition.x + offset.x, transform.localPosition.y + offset.y, transform.localPosition.z + offset.z);
+                var pos = new NetworkVec3(transform.localPosition.x, transform.localPosition.y, transform.localPosition.z);
                 var rot = new NetworkVec4(transform.localRotation.x, transform.localRotation.y, transform.localRotation.z, transform.localRotation.w);
                 var scale = new NetworkVec3(transform.localScale.x, transform.localScale.y, transform.localScale.z);
 
@@ -112,9 +110,9 @@ namespace OwlTree.Unity
                 return;
 
             var pos = new NetworkVec3(
-                transform.transform.localPosition.x + transform.offset.x, 
-                transform.transform.localPosition.y + transform.offset.y, 
-                transform.transform.localPosition.z + transform.offset.z);
+                transform.transform.localPosition.x, 
+                transform.transform.localPosition.y, 
+                transform.transform.localPosition.z);
             var rot = new NetworkVec4(
                 transform.transform.localRotation.x, 
                 transform.transform.localRotation.y, 

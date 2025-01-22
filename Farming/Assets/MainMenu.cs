@@ -1,17 +1,18 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-using OwlTree.Matchmaking;
+using OwlTree.Matchmaking.Unity;
 using System.Threading.Tasks;
 using TMPro;
 using OwlTree.Unity;
 using OwlTree;
+using UnityEngine.SceneManagement;
 
 public class MainMenu : MonoBehaviour
 {
     public bool Waiting { get; private set; } = false;
 
-    [SerializeField] string domainName = "http://localhost:5000";
+    [SerializeField] string domainName = "http://127.0.0.1:5000";
 
     MatchmakingClient client;
 
@@ -23,7 +24,7 @@ public class MainMenu : MonoBehaviour
     public void OnHost()
     {
         if (Waiting) return;
-        var response = client.MakeRequest(new MatchmakingRequest{
+        var request = new MatchmakingRequest{
             appId = "FarmingWithFriends_OwlTreeExample",
             sessionId = Random.Range(100, 1000).ToString(),
             serverType = ServerType.Relay,
@@ -32,7 +33,9 @@ public class MainMenu : MonoBehaviour
             migratable = true,
             owlTreeVersion = 1,
             appVersion = 1
-        });
+        };
+        var response = client.MakeRequest(request);
+        Debug.Log("sent request: " + request.Serialize());
         StartCoroutine(WaitForResponse(response));
     }
 
@@ -42,7 +45,7 @@ public class MainMenu : MonoBehaviour
     {
         if (Waiting) return;
         var sessionId = idField.text;
-        var response = client.MakeRequest(new MatchmakingRequest{
+        var request = new MatchmakingRequest{
             appId = "FarmingWithFriends_OwlTreeExample",
             sessionId = sessionId,
             serverType = ServerType.Relay,
@@ -51,7 +54,9 @@ public class MainMenu : MonoBehaviour
             migratable = true,
             owlTreeVersion = 1,
             appVersion = 1
-        });
+        };
+        var response = client.MakeRequest(request);
+        Debug.Log("sent request: " + request.Serialize());
         StartCoroutine(WaitForResponse(response));
     }
 
@@ -68,6 +73,7 @@ public class MainMenu : MonoBehaviour
 
         if (val.RequestSuccessful)
         {
+            Debug.Log("got response: " + val.Serialize());
             var connection = Instantiate(connectionPrefab);
             var args = unityArgs.GetArgs();
             args.appId = val.appId;
@@ -78,6 +84,12 @@ public class MainMenu : MonoBehaviour
             args.role = NetRole.Client;
 
             connection.Connect(args);
+
+            SceneManager.LoadScene("Farm");
+        }
+        else
+        {
+            Debug.Log("Request Failed: " + val.Serialize());
         }
 
         Waiting = false;
