@@ -165,6 +165,18 @@ namespace OwlTree.Unity
                 }
                 yield return null;
             }
+
+            _spawner.OnObjectSpawn = (obj) => {
+                if (Connection.Logger.includes.spawnEvents)
+                    Connection.Logger.Write($"Spawned new NetworkGameObject \"{obj.name}\": {obj.Id}");
+                OnGameObjectSpawn?.Invoke(obj);
+            };
+            _spawner.OnObjectDespawn = (obj) => {
+                if (Connection.Logger.includes.spawnEvents)
+                    Connection.Logger.Write($"Despawned NetworkGameObject \"{obj.name}\": {obj.Id}");
+                OnGameObjectDespawn?.Invoke(obj);
+            };
+
             OnReady?.Invoke(Connection.LocalId);
         }
 

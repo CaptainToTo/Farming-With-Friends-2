@@ -4,6 +4,8 @@ using UnityEngine;
 using OwlTree.StateMachine;
 using System.Linq;
 
+// Contains all states a player can be in
+
 public class PlayerIdle : State
 {
     public override void OnEnter(State from, IStateData data)
@@ -45,6 +47,8 @@ public class PlayerMove : State
             new Vector3(playerData.moveDir.x, 0, playerData.moveDir.y);
     }
 }
+
+// hold down left click to harvest or plant
 
 public class PlayerPlant : State
 {
@@ -88,7 +92,11 @@ public class PlayerHarvest : State
 
         if (timer <= 0)
         {
-            var crops = Physics.OverlapSphere(playerData.self.transform.position, playerData.self.harvestReach, LayerMask.GetMask("Crops")).Select(c => c.GetComponent<Crop>());
+            var crops = Physics.OverlapSphere(
+                    playerData.self.transform.position, 
+                    playerData.self.harvestReach, 
+                    LayerMask.GetMask("Crops")
+                ).Select(c => c.GetComponent<Crop>());
             if (crops.Count() > 0)
                 playerData.self.OnHarvest.Invoke(playerData.self, crops.First());
             SwapTo(playerData.self.Idle);

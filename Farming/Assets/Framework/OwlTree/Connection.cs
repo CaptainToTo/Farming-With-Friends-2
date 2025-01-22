@@ -1,13 +1,11 @@
 
 using System;
-using System.Collections;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net;
 using System.Text;
 using System.Threading;
-using Unity.VisualScripting;
 
 namespace OwlTree
 {
@@ -353,6 +351,11 @@ namespace OwlTree
         public RpcProtocols Protocols { get; private set; }
 
         private Logger _logger;
+
+        /// <summary>
+        /// The logger used by this connection.
+        /// </summary>
+        internal Logger Logger => _logger;
 
         /// <summary>
         /// Uses this connection's logger to output a message.

@@ -1,15 +1,23 @@
-using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 
 namespace OwlTree.Unity
 {
+    /// <summary>
+    /// Synchronizes local transform state across clients.
+    /// </summary>
     public class NetworkTransform : NetworkBehaviour
     {
         internal TransformNetcode netcode = null;
 
+        /// <summary>
+        /// The authority of this transform. This can be an client, not just the connection authority.
+        /// </summary>
         public ClientId Authority => netcode.Authority;
 
+        /// <summary>
+        /// Assign a client as the authority of this transform. This can only be done
+        /// by the connection authority.
+        /// </summary>
         public void SetAuthority(ClientId authority)
         {
             if (Connection.IsAuthority)
@@ -25,17 +33,21 @@ namespace OwlTree.Unity
             }
         }
 
+        [Tooltip("Lerp between position updates to create smoother movement.")]
         [SerializeField] private bool _interpolate = false;
         public bool Interpolate => _interpolate;
 
+        [Tooltip("Send updates even if the transform hasn't changed. This will consume more bandwidth.")]
         [SerializeField] private bool _continuousSync = false;
 
+        [Tooltip("Disable or enable local rotation synchronization.")]
         [SerializeField] private bool _syncRotation = true;
+        [Tooltip("Disable or enable local scale synchronization.")]
         [SerializeField] private bool _syncScale = false;
 
-        [HideInInspector] public Vector3 nextPos;
-        [HideInInspector] public Quaternion nextRot;
-        [HideInInspector] public Vector3 nextScale;
+        [HideInInspector] internal Vector3 nextPos;
+        [HideInInspector] internal Quaternion nextRot;
+        [HideInInspector] internal Vector3 nextScale;
 
         void FixedUpdate()
         {
@@ -67,17 +79,32 @@ namespace OwlTree.Unity
         }
     }
 
+    // RPCs for network transform, handles state transfer
     public class TransformNetcode : NetworkObject
     {
         internal NetworkTransform transform = null;
 
+        /// <summary>
+        /// The authority of this transform. This can be an client, not just the connection authority.
+        /// </summary>
         public ClientId Authority { get; private set; }
+        private ClientId _original = ClientId.None;
 
         public override void OnSpawn()
         {
             Authority = Connection.Authority;
+            _original = Connection.Authority;
             if (!Connection.IsAuthority)
                 RequestTransform();
+            Connection.OnClientDisconnected += (id) => {
+                if (id == Authority && Connection.IsAuthority)
+                    SetAuthority(Connection.Authority);
+            };
+            Connection.OnHostMigration += (id) => {
+                if (Authority == _original && Connection.IsAuthority)
+                    SetAuthority(Connection.Authority);
+                _original = id;
+            };
         }
 
         [Rpc(RpcPerms.AuthorityToClients, InvokeOnCaller = true)]

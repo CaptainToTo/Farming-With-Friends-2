@@ -8,12 +8,15 @@ using OwlTree.Unity;
 using OwlTree;
 using UnityEngine.SceneManagement;
 
+// use OwlTree's matchmaking service API to handle hosting and joining sessions
 public class MainMenu : MonoBehaviour
 {
     public bool Waiting { get; private set; } = false;
 
+    [Tooltip("The URL matchmaking requests will be made to.")]
     [SerializeField] string domainName = "http://127.0.0.1:5000";
 
+    // the API client request will be made with
     MatchmakingClient client;
 
     void Awake()
@@ -60,7 +63,9 @@ public class MainMenu : MonoBehaviour
         StartCoroutine(WaitForResponse(response));
     }
 
+    [Tooltip("The prefab of the UnityConnection that will be used to create a new connection.")]
     [SerializeField] UnityConnection connectionPrefab;
+    [Tooltip("The connection args that will be provided to the connection.")]
     [SerializeField] ConnectionArgs unityArgs;
 
     private IEnumerator WaitForResponse(Task<MatchmakingResponse> response)
@@ -71,6 +76,7 @@ public class MainMenu : MonoBehaviour
         
         var val = response.Result;
 
+        // if matchmaking request was successful, create a new connection
         if (val.RequestSuccessful)
         {
             Debug.Log("got response: " + val.Serialize());

@@ -86,6 +86,11 @@ namespace OwlTree.StateMachine
             Connection.OnHostMigration += (id) => {
                 if (Authority == _originalAuth && Connection.IsAuthority)
                     SetAuthority(id);
+                _originalAuth = id;
+            };
+            Connection.OnClientDisconnected += (id) => {
+                if (id == Authority && Connection.IsAuthority)
+                    SetAuthority(Connection.Authority);
             };
         }
 

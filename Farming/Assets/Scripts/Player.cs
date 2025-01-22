@@ -7,8 +7,10 @@ using OwlTree;
 using TMPro;
 using UnityEngine.Events;
 
+// The player controller uses a state machine
 public class Player : NetworkBehaviour
 {
+    // data struct passed to states
     public struct InputData : IStateData
     {
         public float deltaTime;
@@ -20,13 +22,18 @@ public class Player : NetworkBehaviour
 
     public NetworkStateMachine netcode;
     private StateMachine _machine;
+    // The client id of the player this controller is assigned to
     public ClientId PlayerId {get; private set; }
 
+    [Tooltip("Displays who this player is above their character.")]
     [SerializeField] TextMeshProUGUI _idText;
+    [Tooltip("The camera attached to the player. Disabled if not the local player.")]
     [SerializeField] Camera _cmra;
 
+    // true if this player controller is assigned to the local player
     public bool IsLocal => netcode == null || PlayerId == Connection.LocalId;
-
+    
+    // make this player controller networked
     public void SetNetcode(NetworkStateMachine netcode, ClientId playerId)
     {
         this.netcode = netcode;
@@ -37,6 +44,7 @@ public class Player : NetworkBehaviour
             _cmra.gameObject.SetActive(false);
     }
 
+    // player states
     public readonly PlayerIdle Idle = new PlayerIdle();
     public readonly PlayerMove Move = new PlayerMove();
     public readonly PlayerPlant Plant = new PlayerPlant();
@@ -86,6 +94,7 @@ public class Player : NetworkBehaviour
     public float farmSpeed = 3f;
     public float harvestReach = 1.5f;
 
+    // listened to by crop manager to spawn and despawn crops
     public UnityEvent<Player> OnPlant;
     public UnityEvent<Player, Crop> OnHarvest;
 

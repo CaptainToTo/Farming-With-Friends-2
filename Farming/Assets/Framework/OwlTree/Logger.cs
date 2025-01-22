@@ -196,6 +196,9 @@ namespace OwlTree
 
             internal bool exceptions { get; private set; }
 
+            /// <summary>
+            /// Output any exceptions thrown during this connection's runtime.
+            /// </summary>
             public IncludeRules Exceptions()
             {
                 exceptions = true;
