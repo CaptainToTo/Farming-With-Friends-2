@@ -13,12 +13,12 @@ MonoBehaviour:
   m_Name: ConnectionArgs
   m_EditorClassIdentifier: 
   appId: FarmingWithFriends_OwlTreeExample
+  sessionId: MyAppSession
   isClient: 1
   serverAddr: 127.0.0.1
   tcpPort: 8000
   udpPort: 9000
   maxClients: 4
-  hostAddr: 
   migratable: 0
   shutdownWhenEmpty: 1
   connectionRequestRate: 5000
@@ -30,10 +30,27 @@ MonoBehaviour:
   appVersion: 1
   minAppVersion: 0
   useCompression: 1
-  measureBandwidth: 1
   threaded: 1
   threadUpdateDelta: 40
   prefabs:
   - {fileID: 5894280456266665069, guid: 141405ecfaae1d840bba0f24fc50aa18, type: 3}
   - {fileID: 371684750797230727, guid: 988501de3b991ba4b840b0744f9a94d9, type: 3}
   - {fileID: 9131354100887595100, guid: 768f4162c896dff478c68f45388da685, type: 3}
+  measureBandwidth: 1
+  verbosity:
+    spawnEvents: 0
+    clientEvents: 1
+    connectionAttempts: 1
+    allTypeIds: 1
+    allRpcProtocols: 1
+    rpcCalls: 0
+    rpcReceives: 0
+    rpcCallEncodings: 0
+    rpcReceiveEncodings: 0
+    tcpPreTransform: 0
+    tcpPostTransform: 0
+    udpPreTransform: 0
+    udpPostTransform: 0
+    exceptions: 1
+    logSeparators: 0
+    logTimestamp: 0

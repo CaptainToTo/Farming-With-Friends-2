@@ -80,11 +80,11 @@ public static class Commands
         Console.WriteLine("disconnecting " + clientId);
     }
 
-    internal static void RelayList(ConnectionManager? relays)
+    internal static void RelayList(RelayManager? relays)
     {
         if (relays == null) return;
         Console.WriteLine("Relays:");
         foreach (var relay in relays.Connections)
-            Console.WriteLine($"   {(relay.IsRelay ? "relay" : "server")} {relays.Get(relay)} ({relay.AppId}): TCP: {relay.ServerTcpPort}, UDP: {relay.ServerUdpPort}, {relay.ClientCount}/{relay.MaxClients} clients");
+            Console.WriteLine($"   {(relay.IsRelay ? "relay" : "server")} {relay.SessionId} ({relay.AppId}): TCP: {relay.ServerTcpPort}, UDP: {relay.ServerUdpPort}, {relay.ClientCount}/{relay.MaxClients} clients");
     }
 }

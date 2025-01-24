@@ -1,6 +1,8 @@
 ﻿using OwlTree;
 using OwlTree.Matchmaking;
 
+/// Example test client to use test relay service
+
 var rand = new Random();
 var logId = rand.Next();
 var logFile = $"client{logId}.log";
