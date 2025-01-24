@@ -451,6 +451,10 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 2756387239122193458, guid: dfccbbaa80518d24bae2b6f258e37fc3, type: 3}
+      propertyPath: _connection
+      value: 
+      objectReference: {fileID: 8137407245558080736}
     - target: {fileID: 6003073149606796815, guid: dfccbbaa80518d24bae2b6f258e37fc3, type: 3}
       propertyPath: m_Name
       value: BandwidthDashboard
