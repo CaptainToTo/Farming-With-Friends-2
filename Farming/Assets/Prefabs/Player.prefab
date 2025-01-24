@@ -344,8 +344,8 @@ GameObject:
   - component: {fileID: 9097583381413652847}
   - component: {fileID: 1663549829778174881}
   - component: {fileID: 7529584863796366075}
-  - component: {fileID: 8062127473069917086}
-  - component: {fileID: -2348914284987037915}
+  - component: {fileID: 1122515818619078348}
+  - component: {fileID: 5491936924220415086}
   m_Layer: 0
   m_Name: Player
   m_TagString: Untagged
@@ -492,7 +492,7 @@ Rigidbody:
   m_Interpolate: 0
   m_Constraints: 112
   m_CollisionDetection: 1
---- !u!114 &8062127473069917086
+--- !u!114 &1122515818619078348
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -501,7 +501,23 @@ MonoBehaviour:
   m_GameObject: {fileID: 5894280456266665069}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: b6fe0120b08599c4985eb135a40a0fa7, type: 3}
+  m_Script: {fileID: 11500000, guid: bde2c949cf330264e96785aea8a49bbf, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  _interpolate: 1
+  _continuousSync: 0
+  _syncRotation: 1
+  _syncScale: 0
+--- !u!114 &5491936924220415086
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5894280456266665069}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a50addb75e817c2408d0465af10a2b38, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
   OnSpawn:
@@ -510,23 +526,3 @@ MonoBehaviour:
   OnDespawn:
     m_PersistentCalls:
       m_Calls: []
---- !u!114 &-2348914284987037915
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 5894280456266665069}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: d26ec7e93004e8d4da7d797ac632dc05, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  offset: {x: 0, y: 0, z: 0}
-  _interpolate: 1
-  _continuousSync: 0
-  _syncRotation: 1
-  _syncScale: 0
-  nextPos: {x: 0, y: 0, z: 0}
-  nextRot: {x: 0, y: 0, z: 0, w: 0}
-  nextScale: {x: 0, y: 0, z: 0}

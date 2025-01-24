@@ -10,8 +10,8 @@ GameObject:
   m_Component:
   - component: {fileID: 5894789889055388979}
   - component: {fileID: 6066683151487530692}
-  - component: {fileID: 2605571116324470011}
   - component: {fileID: -226191323069538415}
+  - component: {fileID: 6127235974747426090}
   m_Layer: 0
   m_Name: Managers
   m_TagString: Untagged
@@ -62,24 +62,6 @@ MonoBehaviour:
           m_StringArgument: 
           m_BoolArgument: 0
         m_CallState: 2
---- !u!114 &2605571116324470011
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 371684750797230727}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: b6fe0120b08599c4985eb135a40a0fa7, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  OnSpawn:
-    m_PersistentCalls:
-      m_Calls: []
-  OnDespawn:
-    m_PersistentCalls:
-      m_Calls: []
 --- !u!114 &-226191323069538415
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -93,3 +75,21 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   cropPrefab: {fileID: 9131354100887595100, guid: 768f4162c896dff478c68f45388da685, type: 3}
+--- !u!114 &6127235974747426090
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 371684750797230727}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a50addb75e817c2408d0465af10a2b38, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  OnSpawn:
+    m_PersistentCalls:
+      m_Calls: []
+  OnDespawn:
+    m_PersistentCalls:
+      m_Calls: []
