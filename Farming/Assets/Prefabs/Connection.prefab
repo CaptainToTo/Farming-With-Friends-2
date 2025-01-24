@@ -199,7 +199,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 2a16bec519b9b8642a8caa6ce0ad35b2, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  _args: {fileID: 0}
+  _args: {fileID: 11400000, guid: 68d6b4fe084aaa24ba31589eb756b6cc, type: 2}
   OnStart:
     m_PersistentCalls:
       m_Calls:
@@ -367,6 +367,10 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 8301474940539210108}
     m_Modifications:
+    - target: {fileID: -8672825523278759277, guid: dfccbbaa80518d24bae2b6f258e37fc3, type: 3}
+      propertyPath: _connection
+      value: 
+      objectReference: {fileID: 8137407245558080736}
     - target: {fileID: 621434924348225784, guid: dfccbbaa80518d24bae2b6f258e37fc3, type: 3}
       propertyPath: m_Pivot.x
       value: 0

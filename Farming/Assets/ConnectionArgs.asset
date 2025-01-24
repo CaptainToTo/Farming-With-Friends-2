@@ -9,7 +9,7 @@ MonoBehaviour:
   m_GameObject: {fileID: 0}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 8615941bb0ba35343868ad26c042e08b, type: 3}
+  m_Script: {fileID: 11500000, guid: ea9d8061b8ab5034786f33ee45bd0594, type: 3}
   m_Name: ConnectionArgs
   m_EditorClassIdentifier: 
   appId: FarmingWithFriends_OwlTreeExample
@@ -33,9 +33,9 @@ MonoBehaviour:
   threaded: 1
   threadUpdateDelta: 40
   prefabs:
-  - {fileID: 5894280456266665069, guid: 141405ecfaae1d840bba0f24fc50aa18, type: 3}
-  - {fileID: 371684750797230727, guid: 988501de3b991ba4b840b0744f9a94d9, type: 3}
   - {fileID: 9131354100887595100, guid: 768f4162c896dff478c68f45388da685, type: 3}
+  - {fileID: 371684750797230727, guid: 988501de3b991ba4b840b0744f9a94d9, type: 3}
+  - {fileID: 5894280456266665069, guid: 141405ecfaae1d840bba0f24fc50aa18, type: 3}
   measureBandwidth: 1
   verbosity:
     spawnEvents: 0
